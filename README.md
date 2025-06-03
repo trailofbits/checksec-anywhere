@@ -1,0 +1,1 @@
+Checksec-Anywhere: A platform-agnostic checksec tool
