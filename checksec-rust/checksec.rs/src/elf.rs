@@ -26,6 +26,8 @@ use crate::disassembly::{has_stack_clash_protection, Bitness};
 use crate::ldso::{LdSoError, LdSoLookup};
 use crate::shared::{Rpath, VecRpath};
 
+static STC_CANARY_KWDS: [&str; 3] = ["__stack_chk_fail", "__stack_chk_guard", "__intel_security_cookie"];
+
 /// Relocation Read-Only mode: `None`, `Partial`, or `Full`
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub enum Relro {
@@ -62,7 +64,7 @@ impl fmt::Display for Relro {
 }
 
 /// Position Independent Executable mode: `None`, `DSO`, or `PIE`
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub enum PIE {
     None,
     DSO,
@@ -97,7 +99,7 @@ impl fmt::Display for PIE {
 }
 
 /// Fortification status: `Full`, `Partial`, `None` or `Undecidable`
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub enum Fortify {
     Full,
     Partial,
@@ -409,11 +411,8 @@ impl Properties for Elf<'_> {
     fn has_canary(&self) -> bool {
         for sym in &self.dynsyms {
             if let Some(name) = self.dynstrtab.get_at(sym.st_name) {
-                match name {
-                    "__stack_chk_fail" | "__intel_security_cookie" => {
-                        return true
-                    }
-                    _ => continue,
+                if STC_CANARY_KWDS.iter().any(|kw| name.contains(kw)){
+                    return true;
                 }
             }
         }
@@ -549,7 +548,7 @@ impl Properties for Elf<'_> {
             if header.p_type == PT_GNU_RELRO {
                 if let Some(dynamic) = &self.dynamic {
                     if DF_BIND_NOW & dynamic.info.flags == DF_BIND_NOW
-                        && DF_1_NOW & dynamic.info.flags_1 == DF_1_NOW
+                        || DF_1_NOW & dynamic.info.flags_1 == DF_1_NOW // binary not guaranteed to have both flags set. If either DF_BIND_NOW or DF_1_NOW are set, is is full Relro, as both flags disable lazy 
                     {
                         return Relro::Full;
                     }
