@@ -6,7 +6,7 @@ use either::Either;
 use goblin::elf::dynamic::{
     DF_1_NOW, DF_1_PIE, DF_BIND_NOW, DT_RPATH, DT_RUNPATH,
 };
-use goblin::elf::header::ET_DYN;
+use goblin::elf::header::{ET_DYN, ET_REL};
 use goblin::elf::program_header::{PF_X, PT_GNU_RELRO, PT_GNU_STACK};
 #[cfg(feature = "disassembly")]
 use goblin::elf::section_header::{SHF_ALLOC, SHF_EXECINSTR, SHT_PROGBITS};
@@ -68,6 +68,7 @@ impl fmt::Display for Relro {
 pub enum PIE {
     None,
     DSO,
+    REL,
     PIE,
 }
 
@@ -92,6 +93,7 @@ impl fmt::Display for PIE {
             match *self {
                 Self::None => "None".red(),
                 Self::DSO => "DSO".yellow(),
+                Self::REL => "REL".yellow(),
                 Self::PIE => "Full".green(),
             }
         )
@@ -187,11 +189,13 @@ impl CheckSecResults {
     #[must_use]
     pub fn parse(elf: &Elf, bytes: &[u8]) -> Self {
         let (fortified, fortifiable) = elf.has_fortified();
+    
         let fortify = match (fortified, fortifiable) {
-            (1.., 0) => Fortify::Full,
-            (1.., 1..) => Fortify::Partial,
-            (0, 1..) => Fortify::None,
-            (0, 0) => Fortify::Undecidable,
+            (0, 0) => Fortify::Undecidable, 
+            (f, v) if f == v => Fortify::Full,
+            (f, v) if f == 0 => Fortify::None,
+            (f, v) if f < v => Fortify::Partial,
+            _ => Fortify::Undecidable, // This case should never happen
         };
         Self {
             canary: elf.has_canary(),
@@ -320,8 +324,9 @@ pub trait Properties {
 }
 
 // readelf -s -W /lib/x86_64-linux-gnu/libc.so.6 | grep _chk
-const FORTIFIABLE_FUNCTIONS: [&str; 79] = [
+const FORTIFIABLE_FUNCTIONS: [&str; 84] = [
     "asprintf",
+    "chk_fail",
     "confstr",
     "dprintf",
     "explicit_bzero",
@@ -339,12 +344,12 @@ const FORTIFIABLE_FUNCTIONS: [&str; 79] = [
     "getgroups",
     "gethostname",
     "getlogin_r",
-    "gets",
     "getwd",
+    "gets",
     "longjmp",
     "mbsnrtowcs",
-    "mbsrtowcs",
     "mbstowcs",
+    "mbsrtowcs",
     "memcpy",
     "memmove",
     "mempcpy",
@@ -365,10 +370,13 @@ const FORTIFIABLE_FUNCTIONS: [&str; 79] = [
     "recvfrom",
     "snprintf",
     "sprintf",
+    "stack_fail",
     "stpcpy",
     "stpncpy",
     "strcat",
     "strcpy",
+    "strlcat",
+    "strlcpy",
     "strncat",
     "strncpy",
     "swprintf",
@@ -377,7 +385,6 @@ const FORTIFIABLE_FUNCTIONS: [&str; 79] = [
     "vasprintf",
     "vdprintf",
     "vfprintf",
-    "vfwprintf",
     "vprintf",
     "vsnprintf",
     "vsprintf",
@@ -385,22 +392,25 @@ const FORTIFIABLE_FUNCTIONS: [&str; 79] = [
     "vsyslog",
     "vwprintf",
     "wcpcpy",
-    "wcpncpy",
-    "wcrtomb",
     "wcscat",
     "wcscpy",
+    "wcslcat",
+    "wcslcpy",
     "wcsncat",
-    "wcsncpy",
     "wcsnrtombs",
+    "wcsncpy",
     "wcsrtombs",
-    "wcstombs",
     "wctomb",
+    "wcrtomb",
+    "wcstombs",
     "wmemcpy",
     "wmemmove",
     "wmempcpy",
     "wmemset",
     "wprintf",
+    "wcpncpy",
 ];
+
 /*
  * TODO: static assert that FORTIFIABLE_FUNCTIONS is sorted
  * unstable library feature 'is_sorted':
@@ -507,7 +517,7 @@ impl Properties for Elf<'_> {
                 }
             }
         }
-        (fortified_count, fortifiable_count)
+        (fortified_count, fortifiable_count+fortified_count)
     }
     /*
     // requires running platform to be Linux
@@ -540,6 +550,9 @@ impl Properties for Elf<'_> {
                 }
             }
             return PIE::DSO;
+        }
+        if self.header.e_type == ET_REL {
+            return PIE::REL;
         }
         PIE::None
     }
