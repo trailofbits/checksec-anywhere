@@ -1,9 +1,0 @@
-[package]
-name = "checksec_anywhere"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-goblin = "0.6.0"
-wasm-bindgen = "0.2"
-checksec = { path = "./checksec.rs" }
