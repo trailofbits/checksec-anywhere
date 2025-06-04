@@ -1,31 +1,34 @@
 use goblin::{error, Object};
-mod parse_elf;
+use goblin::mach::Mach;
 
-fn parse_bin (buffer: &Vec<u8>) -> error::Result<()> {
+use checksec::pe::CheckSecResults as CheckSecResults_pe;
+use checksec::elf::CheckSecResults as CheckSecResults_elf; 
+use checksec::macho::CheckSecResults as CheckSecResults_macho;
+
+pub enum CheckSecResults {
+    Elf(CheckSecResults_elf),
+    Pe(CheckSecResults_pe),
+    Macho(CheckSecResults_macho),
+}
+
+pub fn checksec (buffer: &Vec<u8>) -> error::Result<CheckSecResults> {
     match Object::parse(&buffer)? {
         Object::Elf(elf) => {
-            parse_elf::parse_elf(&elf);
+            let result = CheckSecResults_elf::parse(&elf, &buffer);
+            Ok(CheckSecResults::Elf(result))
         },
         Object::PE(pe) => {
-            println!("pe: {:#?}", &pe);
+            let result = CheckSecResults_pe::parse(&pe, &buffer);
+            Ok(CheckSecResults::Pe(result))
         },
-        Object::COFF(coff) => {
-            println!("coff: {:#?}", &coff);
+        Object::Mach(mach) => match mach {
+            Mach::Binary(mach) => {
+                let result = CheckSecResults_macho::parse(&mach); 
+                Ok(CheckSecResults::Macho(result))
+            }
+            _ => { Err(error::Error::Malformed("fat binaries currently not supported".into())) }
         },
-        Object::Mach(mach) => {
-            println!("mach: {:#?}", &mach);
-        },
-        Object::Archive(archive) => {
-            println!("archive: {:#?}", &archive);
-        },
-        Object::Unknown(magic) => { println!("unknown magic: {:#x}", magic) },
-        _ => { }
+        _ => {  Err(error::Error::Malformed("unsupported file type".into())) }
     }
-    Ok(())
 }
 
-pub fn checksec(buffer: &Vec<u8>) {
-    if let Err(e) = parse_bin(&buffer) {
-        eprintln!("Error: {}", e);
-    }
-}
