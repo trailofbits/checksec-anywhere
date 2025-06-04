@@ -3,7 +3,7 @@ use std::path::Path;
 use std::fs;
 
 use checksec_anywhere::{checksec, CheckSecResults};
-use checksec::{elf};
+use checksec::{elf, shared};
 
 fn file_to_buf(filename: String) -> Vec<u8>{
     let path = Path::new(&filename);
@@ -11,7 +11,7 @@ fn file_to_buf(filename: String) -> Vec<u8>{
         return buf;
     }
     else{
-        println!("reading of provided failed, test suite is misconfigured");
+        println!("reading of provided file path failed, test suite is misconfigured");
         process::exit(1)
     }
 }
@@ -85,6 +85,15 @@ fn test_PIE_DSO(){
 }
 
 #[test]
+fn test_PIE_REL(){
+    let buf = file_to_buf("./tests/binaries/elf/rel.o".into());
+    if let Ok(CheckSecResults::Elf(elf_result)) = checksec(&buf){
+        assert_eq!(elf_result.pie, elf::PIE::REL);
+    }
+}
+
+
+#[test]
 fn test_PIE_none(){
     let buf = file_to_buf("./tests/binaries/elf/nolibc".into());
     if let Ok(CheckSecResults::Elf(elf_result)) = checksec(&buf){
@@ -114,7 +123,6 @@ fn test_fortify_no(){
 
 #[test]
 fn test_fortify_partial(){
-    // difference in fortifiable functions
     let buf = file_to_buf("./tests/binaries/elf/partial".into());
     if let Ok(CheckSecResults::Elf(elf_result)) = checksec(&buf){
         assert_eq!(elf_result.fortify, elf::Fortify::Partial);
@@ -123,6 +131,49 @@ fn test_fortify_partial(){
     }
 }
 
+#[test]
+fn test_fortify_full(){
+    let buf = file_to_buf("./tests/binaries/elf/rpath".into());
+    if let Ok(CheckSecResults::Elf(elf_result)) = checksec(&buf){
+        assert_eq!(elf_result.fortify, elf::Fortify::Full);
+        assert_eq!(elf_result.fortified, 2);
+        assert_eq!(elf_result.fortifiable, 2);
+    }
+}
+
+#[test]
+fn test_nx_Na(){
+    let buf = file_to_buf("./tests/binaries/elf/rel.o".into());
+    if let Ok(CheckSecResults::Elf(elf_result)) = checksec(&buf){
+        assert_eq!(elf_result.nx, elf::Nx::Na);
+    }
+}
+
+#[test]
+fn test_nx_disabled(){
+    let buf = file_to_buf("./tests/binaries/elf/none".into());
+    if let Ok(CheckSecResults::Elf(elf_result)) = checksec(&buf){
+        assert_eq!(elf_result.nx, elf::Nx::Disabled);
+    }
+}
+
+#[test]
+fn test_nx_enabled(){
+    let buf = file_to_buf("./tests/binaries/elf/fszero".into());
+    if let Ok(CheckSecResults::Elf(elf_result)) = checksec(&buf){
+        assert_eq!(elf_result.nx, elf::Nx::Enabled);
+    }
+}
+
+#[test]
+fn test_rpath_enabled(){
+    let buf = file_to_buf("./tests/binaries/elf/fszero".into());
+    if let Ok(CheckSecResults::Elf(elf_result)) = checksec(&buf){
+        let rpath_vec = shared::VecRpath::new(vec![shared::Rpath::YesRW("./".into())]);
+        assert_eq!(elf_result.rpath.len(), rpath_vec.len());
+        // TODO: Check internal values
+    }
+}
 
 
 
