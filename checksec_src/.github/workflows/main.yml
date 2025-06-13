@@ -1,0 +1,73 @@
+name: github actions
+on:
+  push:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build_and_test:
+    name: checksec build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build: [ linux-stable, linux-nightly, macos-stable, macos-nightly, win32-stable, win32-nightly, win64-stable, win64-nightly ]
+        include:
+          - build: linux-stable
+            os: ubuntu-latest
+            rust: stable
+          - build: linux-nightly
+            os: ubuntu-latest
+            rust: nightly
+          - build: macos-stable
+            os: macos-latest
+            rust: stable
+          - build: macos-nightly
+            os: macos-latest
+            rust: nightly
+          - build: win32-stable
+            os: windows-latest
+            rust: stable-i686-msvc
+          - build: win32-nightly
+            os: windows-latest
+            rust: nightly-i686-msvc
+          - build: win64-stable
+            os: windows-latest
+            rust: stable-x86_64-msvc
+          - build: win64-nightly
+            os: windows-latest
+            rust: nightly-x86_64-msvc
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+    steps:
+    - uses: actions/checkout@master
+    - name: cache CARGO_HOME
+      uses: actions/cache@v1
+      with:
+        path: ~/.cargo
+        key: ${{ runner.os }}-cargo-home-${{ hashFiles('**/Cargo.toml') }}
+        restore-keys: ${{ runner.os }}-cargo-home
+    - name: install rust
+      shell: bash
+      run: |
+        curl -sSL https://sh.rustup.rs | sh -s -- -y --profile=minimal --default-toolchain=none
+        export PATH="$HOME/.cargo/bin:$PATH"
+        rustup override set ${{ matrix.rust }}
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    - name: rustfmt
+      shell: bash
+      if: matrix.rust == 'stable'
+      run: |
+        rustup component add rustfmt
+        cargo fmt -- --check
+    - name: clippy
+      shell: bash
+      if: matrix.rust == 'stable'
+      run: |
+        rustup component add clippy
+        cargo clippy --all -- -D clippy::all -D clippy::pedantic
+    - run: cargo build
+    - run: cargo build --all-targets
+    - run: cargo build --no-default-features --features elf
+    - run: cargo build --no-default-features --features pe
+    - run: cargo build --no-default-features --features macho
+    - run: cargo test
