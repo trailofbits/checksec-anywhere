@@ -1,0 +1,1 @@
+Test files sourced from goblin: https://github.com/m4b/goblin/tree/master/tests/bins/pe
