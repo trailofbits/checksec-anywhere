@@ -1,1 +1,0 @@
-Elf files sourced from the checksec repository: https://github.com/slimm609/checksec/tree/main/tests/binaries
