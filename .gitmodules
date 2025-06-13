@@ -1,3 +1,0 @@
-[submodule "checksec.rs"]
-	path = checksec.rs
-	url = https://github.com/trailofbits/checksec.rs
