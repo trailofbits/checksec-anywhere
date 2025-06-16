@@ -1,4 +1,4 @@
-use checksec::{elf, shared, checksec_core, BinResults, compression::{compress, decompress}};
+use checksec::{checksec_core, BinResults, compression::{compress, decompress, get_sha256_hash}};
 mod utils;
 use utils::file_to_buf;
 
@@ -19,3 +19,9 @@ fn test_roundtrip() {
     }
 }
 
+#[test]
+fn test_sha() {
+    let hash = "19245b35a3eea8282c425146223b6f3d0ba578a017213dd142f04bc5a39f9014".to_string();
+    let buf = file_to_buf("./tests/binaries/pe/no_debug_directories.exe.bin".into());
+    assert_eq!(hash, hex::encode(get_sha256_hash(&buf)));
+}

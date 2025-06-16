@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checksec Anywhere</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Checksec Anywhere</h1>
+        <p class="subtitle">Analyze binary security features in your browser</p>
+        
+        <div class="input-section">
+            <div class="input-container">
+                <div id="fileInputWrapper" class="input-box">
+                    <input type="file" id="fileInput" accept="*/*" style="display: none;">
+                    <p>Drop a file or click to browse</p>
+                    <p class="or-text">Supports ELF, PE, and Mach-O binaries</p>
+                </div>
+                
+                <div class="input-divider">
+                    <span>OR</span>
+                </div>
+
+                <div class="url-input-box">
+                    <input type="url" id="urlInput" placeholder="https://busybox.net/downloads/binaries/1.16.1/busybox-armv4eb" class="url-input">
+                    <button id="analyzeUrlBtn" class="analyze-btn">Analyze URL</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing binary...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="resultsSection" class="results-section" style="display: none;">
+            <h2 id="resultsTitle">Security Analysis Results</h2>
+            <ul id="output" class="security-list"></ul>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

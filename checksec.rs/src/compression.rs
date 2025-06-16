@@ -1,6 +1,7 @@
 use serde::{Serialize, de::DeserializeOwned};
 use std::io::{Read, Cursor, Write};
 use flate2::{write::ZlibEncoder, read::ZlibDecoder, Compression};
+use sha2::{Sha256, Digest};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
 use bincode; 
@@ -42,4 +43,11 @@ pub fn decompress<T: DeserializeOwned>(encoded_bytes: &[u8]) -> Result<T, String
     .map_err(|_| "Deserialization failed".to_string())?;
 
     Ok(deserialized) // input bytes -> B64 -> bytes -> decompress -> deserialize
+}
+
+// Given a string of bytes (file contents), get the sha-256 hash
+pub fn get_sha256_hash(bytes: &[u8]) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    hasher.finalize().to_vec()
 }
