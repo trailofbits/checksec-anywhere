@@ -33,29 +33,78 @@ enum SCPSteps {
     EndCmp,
 }
 
+fn check_is_canary_prologue(instrs: &[Instruction], bitness: Bitness, cookie_address: u64) -> u64{
+    let i0 = instrs[0];
+    let i1 = instrs[1];
+    let i2 = instrs[2];
+    if !(i0.mnemonic() == Mnemonic::Mov                 // mov rax,[<addr>] -- moving security cookie into *ax
+        && i0.op1_kind() == OpKind::Memory 
+        && is_ax_reg(i0.op0_register(), bitness) 
+        && get_memory_displacement(&i0, bitness) == cookie_address) { 
+        return 0;
+    }
+    if !(i1.mnemonic() == Mnemonic::Xor                 //xor rax, rsp -- xor security cookie with stack pointer
+        && is_ax_reg(i1.op0_register(), bitness) 
+        && is_sp_reg(i1.op1_register(), bitness)){ 
+        return 0
+    }
+    if i2.mnemonic() == Mnemonic::Mov                   //mov [rsp+30h],rax -- load xor'd value into some offset of stack pointer
+        && i2.op0_kind() == OpKind::Memory 
+        && is_ax_reg(i2.op1_register(), bitness) 
+        && is_sp_reg(i2.memory_base(), bitness){
+        return get_memory_displacement(&i2, bitness);
+    }
+    return 0;
+}
+
+fn check_is_canary_epilogue(instrs: &[Instruction], bitness: Bitness, xored_cookie_offset: u64) -> bool{
+    let i0 = instrs[0];
+    let i1 = instrs[1];
+    let i2 = instrs[2];
+    if !(i0.mnemonic() == Mnemonic::Mov                 // mov rcx,[<addr>] -- moving xor'd security cookie into rcx
+        && i0.op1_kind() == OpKind::Memory 
+        && is_cx_reg(i0.op0_register(), bitness) 
+        && get_memory_displacement(&i0, bitness) == xored_cookie_offset) { 
+        return false;
+    }
+    if !(i1.mnemonic() == Mnemonic::Xor                 //xor rcx, rsp -- xor stored security cookie with stack pointer again (rax and rcx should hold same value)
+        && is_cx_reg(i1.op0_register(), bitness) 
+        && is_sp_reg(i1.op1_register(), bitness)){ 
+        return false;
+    }
+    return i2.mnemonic() == Mnemonic::Call;             // calling __security_check_cookie
+}
+
 // Take care of ARM64 if we want
 #[cfg(feature = "disassembly")]
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn function_has_GE(bytes: &[u8], bitness: Bitness, rip: u64, cookie_address: u64) -> bool{
-    let mut cookie_mov_count = 0;
     let mut decoder =
         Decoder::with_ip(bitness.as_u32(), bytes, rip, DecoderOptions::NONE);
 
     let mut instr = Instruction::default();
+    let mut instr_window: Vec<Instruction> = Vec::new();
+    let mut stack_cookie_invokations = 0;
+    let mut xored_canary_addr = 0;
 
     while decoder.can_decode() {
         decoder.decode_out(&mut instr);
-        if instr.op0_register() == iced_x86::Register::RAX ||  instr.op0_register() == iced_x86::Register::EAX {
-            if instr.op1_kind() == OpKind::Memory{ 
-                if instr.memory_displacement64() == cookie_address { 
-                    cookie_mov_count += 1;
-                }
+        if instr_window.len() == 3{
+            instr_window.remove(0);
+        }
+        instr_window.push(instr.clone());
+        if xored_canary_addr == 0 && instr_window.len() == 3{
+            xored_canary_addr = check_is_canary_prologue(&instr_window, bitness, cookie_address);
+        }
+        if instr_window.len() == 3 && xored_canary_addr > 0{
+            if check_is_canary_epilogue(&instr_window, bitness, xored_canary_addr){
+                stack_cookie_invokations += 1;
+                xored_canary_addr = 0;
             }
         }
     }
-    // println!("Cookie Loaded inro RAX {} times", cookie_mov_count);
-    return cookie_mov_count > 0;
+    return stack_cookie_invokations > 0;
 }
 
 
@@ -216,5 +265,36 @@ fn is_stack_pointer(reg: iced_x86::Register, bitness: Bitness) -> bool {
     reg == match bitness {
         Bitness::B64 => iced_x86::Register::RSP,
         Bitness::B32 => iced_x86::Register::ESP,
+    }
+}
+
+#[cfg(feature = "disassembly")]
+fn is_ax_reg(reg: iced_x86::Register, bitness: Bitness) -> bool {
+    reg == match bitness {
+        Bitness::B64 => iced_x86::Register::RAX,
+        Bitness::B32 => iced_x86::Register::EAX,
+    }
+}
+
+#[cfg(feature = "disassembly")]
+fn is_sp_reg(reg: iced_x86::Register, bitness: Bitness) -> bool {
+    reg == match bitness {
+        Bitness::B64 => iced_x86::Register::RSP,
+        Bitness::B32 => iced_x86::Register::ESP,
+    }
+}
+
+#[cfg(feature = "disassembly")]
+fn is_cx_reg(reg: iced_x86::Register, bitness: Bitness) -> bool {
+    reg == match bitness {
+        Bitness::B64 => iced_x86::Register::RCX,
+        Bitness::B32 => iced_x86::Register::ECX,
+    }
+}
+
+fn get_memory_displacement(instr: &Instruction, bitness: Bitness) -> u64 {
+    match bitness {
+        Bitness::B64 => instr.memory_displacement64(),
+        Bitness::B32 => instr.memory_displacement32() as u64,
     }
 }
