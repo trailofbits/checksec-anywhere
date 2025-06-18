@@ -13,6 +13,9 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::mem::size_of;
 
+#[cfg(feature = "disassembly")]
+use crate::disassembly::{function_has_GE, Bitness};
+
 #[cfg(feature = "color")]
 use crate::colorize_bool;
 
@@ -218,7 +221,7 @@ fn get_load_config_val(
     let dir_size = size_of::<ImageLoadConfigDirectory>();
     let rva = load_config_hdr.virtual_address as usize;
     if let Ok(offset) =
-        find_offset(rva, sections, file_alignment, &ParseOptions::default())
+        find_offset(rva, sections, file_alignment, &ParseOptions::default()) //use section headers to calculate offset based on RVA
             .ok_or_else(|| {
                 goblin::error::Error::Malformed(
                     load_config_hdr.virtual_address.to_string(),
@@ -229,6 +232,23 @@ fn get_load_config_val(
     } else {
         Err(scroll::Error::BadOffset(rva))
     }
+}
+
+fn get_text_section<'a>(pe: &PE, bytes: &'a [u8]) -> (&'a [u8], u32) {
+    for section in pe.sections.iter(){
+        let trimmed_bytes = &section.name.split(|&b| b == 0).next().unwrap_or(&[]);
+        let section_name = std::str::from_utf8(&trimmed_bytes).unwrap_or_default();
+        if section_name != ".text"{
+            continue
+        }
+        if let Some(execbytes) = bytes.get(
+                usize::try_from(section.pointer_to_raw_data).unwrap()
+                    ..usize::try_from(section.pointer_to_raw_data + section.virtual_size).unwrap(),
+            ) {
+                return (execbytes, section.virtual_address);
+            }
+    }
+    return (&[], 0);
 }
 
 /// Address Space Layout Randomization: `None`, `DYNBASE`, or `HIGHENTROPYVA`
@@ -599,6 +619,7 @@ impl Properties for PE<'_> {
         false
     }
     fn has_gs(&self, bytes: &[u8]) -> bool {
+        let mut cookie_address: u64 = 0;
         if let Some(optional_header) = self.header.optional_header {
             let file_alignment = optional_header.windows_fields.file_alignment;
             let sections = &self.sections;
@@ -611,11 +632,24 @@ impl Properties for PE<'_> {
                     sections,
                     file_alignment,
                 ) {
-                    return load_config_val.security_cookie != 0;
+                    cookie_address = load_config_val.security_cookie; //this points to the segment of memory that holds the security cookie, we should dissasemble to look for refernces
                 }
             }
         }
-        false
+        #[cfg(not(feature = "disassembly"))]
+        return cookie_address > 0;
+        #[cfg(feature = "disassembly")]
+        {
+        if cookie_address == 0 {
+            return false;
+        }
+        let (text_bytes, ip) = get_text_section(self, bytes);
+        if text_bytes.is_empty() && ip == 0{ //getting text section failed
+            return false;
+        }
+        let bitness = if self.is_64 { Bitness::B64 } else { Bitness::B32 };
+        return function_has_GE(text_bytes, bitness, ip as u64, cookie_address - self.image_base); //calculate the address of the stack cookie relative to the image base
+        }
     }
     fn has_high_entropy_va(&self) -> bool {
         if let Some(optional_header) = self.header.optional_header {

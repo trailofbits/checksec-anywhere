@@ -226,7 +226,7 @@ fn test_no_gs(){
 fn test_authenticode_present(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-authenticode.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
-        assert_eq!(pe_result.gs, true);
+        assert_eq!(pe_result.authenticode, true);
     }
     else {
         panic!("Checksec failed");
@@ -237,7 +237,7 @@ fn test_authenticode_present(){
 fn test_no_authenticode(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-highentropyva.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
-        assert_eq!(pe_result.gs, true);
+        assert_eq!(pe_result.authenticode, false);
     }
     else {
         panic!("Checksec failed");

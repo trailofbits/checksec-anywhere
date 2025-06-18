@@ -1,5 +1,6 @@
 #[cfg(feature = "disassembly")]
-use iced_x86::{Decoder, DecoderOptions, Instruction, Mnemonic};
+use iced_x86::{Decoder, DecoderOptions, Instruction, Mnemonic, FlowControl, OpKind};
+use goblin::pe::PE;
 
 #[cfg(feature = "disassembly")]
 #[derive(Clone, Copy, PartialEq)]
@@ -31,6 +32,32 @@ enum SCPSteps {
     CheckXor,
     EndCmp,
 }
+
+// Take care of ARM64 if we want
+#[cfg(feature = "disassembly")]
+#[allow(clippy::too_many_lines)]
+#[must_use]
+pub fn function_has_GE(bytes: &[u8], bitness: Bitness, rip: u64, cookie_address: u64) -> bool{
+    let mut cookie_mov_count = 0;
+    let mut decoder =
+        Decoder::with_ip(bitness.as_u32(), bytes, rip, DecoderOptions::NONE);
+
+    let mut instr = Instruction::default();
+
+    while decoder.can_decode() {
+        decoder.decode_out(&mut instr);
+        if instr.op0_register() == iced_x86::Register::RAX ||  instr.op0_register() == iced_x86::Register::EAX {
+            if instr.op1_kind() == OpKind::Memory{ 
+                if instr.memory_displacement64() == cookie_address { 
+                    cookie_mov_count += 1;
+                }
+            }
+        }
+    }
+    // println!("Cookie Loaded inro RAX {} times", cookie_mov_count);
+    return cookie_mov_count > 0;
+}
+
 
 #[cfg(feature = "disassembly")]
 #[allow(clippy::too_many_lines)]
