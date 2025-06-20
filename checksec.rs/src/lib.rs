@@ -65,6 +65,7 @@ pub mod pe;
 pub mod shared;
 pub mod web_bindings;
 pub mod compression;
+pub mod sarif;
 
 const VERSION: &str = "0.1.0";
 

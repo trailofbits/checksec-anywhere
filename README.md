@@ -13,6 +13,4 @@ Checksec.rs provides a standalone binary in addition to the library used by the 
 ./checksec --file <filepath>
 ```
 
-Uses a modified version of [checksec-rs](https://docs.rs/checksec) for multi-platform binary parsing support and disassembly.
-
 
