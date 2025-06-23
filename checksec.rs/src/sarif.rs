@@ -1,10 +1,11 @@
 //! Convert checksec report to sarif
 use crate::{BinResults, macho, elf, pe};
 use serde_sarif::sarif;
+use serde_json;
 
 const SARIF_VERSION: &str = "2.1.0";
 
-pub fn get_sarif_report(result: &BinResults) -> sarif::Sarif {
+pub fn get_sarif_report(result: &BinResults) -> serde_json::Result<String> {
     match result {
         BinResults::Elf(elf) => build_sarif_for_checksec(create_elf_results(elf)),
         BinResults::Pe(pe) => build_sarif_for_checksec(create_pe_results(pe)),
@@ -13,7 +14,7 @@ pub fn get_sarif_report(result: &BinResults) -> sarif::Sarif {
 }
 
 // setting properties common to all results
-fn build_sarif_for_checksec(results: Vec<sarif::Result>) -> sarif::Sarif {
+fn build_sarif_for_checksec(results: Vec<sarif::Result>) -> serde_json::Result<String> {
     let tool = sarif::Tool::builder()
         .driver(sarif::ToolComponent::builder()
             .name(format!("checksec-anywhere"))
@@ -27,11 +28,13 @@ fn build_sarif_for_checksec(results: Vec<sarif::Result>) -> sarif::Sarif {
             .build()
     ];
 
-    let sarify = sarif::Sarif::builder()
+    let sarif = sarif::Sarif::builder()
+        .schema(sarif::SCHEMA_URL)
         .runs(runs)
         .version(SARIF_VERSION.to_string())
         .build();
-    return sarify;
+    let json = serde_json::to_string_pretty(&sarif)?;
+    return Ok(json);
     
 }
 

@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use serde_derive::{Deserialize, Serialize};
-use crate::{BinResults, VERSION, checksec_core, compression::{compress, decompress}};
+use crate::{BinResults, VERSION, checksec_core, sarif, compression::{compress, decompress}};
 
 // Hold actual checksec results along with other relevant metadata. 
 // Future-proofing this means we need to be able to modify this struct and BinResults
@@ -52,3 +52,15 @@ pub fn checksec_decompress(buffer: &[u8]) -> Result<JsValue, JsValue> {
         Err(err) => Err(serde_wasm_bindgen::to_value(&err)?),
     }
 }
+
+// Convert a checksec report to the sarif format
+#[wasm_bindgen]
+pub fn generate_sarif_report(js_representation: JsValue) -> Result<JsValue, JsValue> {
+    let report: CheckSecJs = serde_wasm_bindgen::from_value(js_representation)
+        .map_err(|_| JsValue::from_str("Error converting JS value to Rust struct"))?;
+    match sarif::get_sarif_report(&report.data) {
+        Ok(report_string) => Ok(serde_wasm_bindgen::to_value(&report_string)?),
+        Err(err) => Err(serde_wasm_bindgen::to_value(&err.to_string())?),
+    }
+}
+    

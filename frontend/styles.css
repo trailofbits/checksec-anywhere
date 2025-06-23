@@ -170,7 +170,7 @@ body {
     padding-top: 1rem;
 }
 
-.share-btn, .copy-btn {
+.share-btn, .copy-btn, .sarif-btn {
     background: #161b22;
     color: #e6edf3;
     border: 1px solid #30363d;
@@ -183,12 +183,12 @@ body {
     min-width: 100px;
 }
 
-.share-btn:hover, .copy-btn:hover {
+.share-btn:hover, .copy-btn:hover, .sarif-btn:hover {
     background: #21262d;
     border-color: #444c56;
 }
 
-.copy-btn.copied {
+.copy-btn.copied, .sarif-btn.downloaded {
     background: #1a472a;
     border-color: #2d5016;
     color: #56d364;

@@ -1,6 +1,7 @@
 import { getSecurityClass, formatSecurityValue, formatSecurityName } from './security.js';
 import { addPathDetails, addDynLibDetails } from './utils.js';
 import { generateShareableURL, copyToClipboard } from './share.js';
+import { generate_sarif_report } from './pkg/checksec.js';
 
 const output = document.getElementById("output");
 const resultsTitle = document.getElementById("resultsTitle");
@@ -96,6 +97,19 @@ export function displayShareFunctionality(result, isSharedReport) {
         `;
         output.appendChild(shareItem);
         
+        // Add SARIF download functionality
+        const sarifItem = document.createElement("li");
+        sarifItem.className = "security-item sarif-item";
+        sarifItem.innerHTML = `
+            <div class="security-item-main">
+                <span class="security-name">Export SARIF</span>
+                <span class="security-value info">
+                    <button id="downloadSarifBtn" class="sarif-btn">Download SARIF Report</button>
+                </span>
+            </div>
+        `;
+        output.appendChild(sarifItem);
+        
         // Add share functionality
         const shareBtn = document.getElementById('shareReportBtn');
         const copyBtn = document.getElementById('copyLinkBtn');
@@ -139,6 +153,39 @@ export function displayShareFunctionality(result, isSharedReport) {
                 console.error('Failed to copy URL:', err);
                 copyBtn.textContent = 'Error - Try Again';
                 copyBtn.disabled = false;
+            }
+        });
+
+        // Add SARIF download functionality
+        const downloadSarifBtn = document.getElementById('downloadSarifBtn');
+        
+        downloadSarifBtn.addEventListener('click', async () => {
+            downloadSarifBtn.textContent = 'Generating...';
+            downloadSarifBtn.disabled = true;
+            try {
+                const sarifJson = await generate_sarif_report(result);
+                const filename = result.filename + "_checksec-report" || 'checksec-report';
+                const blob = new Blob([sarifJson], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${filename}.sarif`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                downloadSarifBtn.textContent = 'Downloaded!';
+                downloadSarifBtn.classList.add('downloaded');
+                setTimeout(() => {
+                    downloadSarifBtn.textContent = 'Download SARIF Report';
+                    downloadSarifBtn.classList.remove('downloaded');
+                    downloadSarifBtn.disabled = false;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to generate SARIF report:', err);
+                downloadSarifBtn.textContent = 'Error - Try Again';
+                downloadSarifBtn.disabled = false;
             }
         });
     }
