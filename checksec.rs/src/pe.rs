@@ -14,7 +14,7 @@ use std::fmt;
 use std::mem::size_of;
 
 #[cfg(feature = "disassembly")]
-use crate::disassembly::{function_has_GE, Bitness};
+use crate::disassembly::{function_has_ge, Bitness};
 
 #[cfg(feature = "color")]
 use crate::colorize_bool;
@@ -329,14 +329,10 @@ pub struct CheckSecResults {
     pub dotnet: bool,
     /// Data Execution Prevention
     pub nx: bool,
-    /// Dynamic Base
-    pub dynamic_base: bool,
     /// Force Integrity (`/INTEGRITYCHECK`)
     pub force_integrity: bool,
     /// Buffer Security Check (`/GS`)
     pub gs: bool,
-    /// 64-bit ASLR (`/HIGHENTROPYVA`)
-    pub high_entropy_va: bool,
     /// Allow Isolation (`/ALLOWISOLATION`)
     pub isolation: bool,
     /// Return Flow Guard
@@ -357,10 +353,8 @@ impl CheckSecResults {
             cfg: pe.has_cfg(),
             dotnet: pe.has_dotnet(),
             nx: pe.has_nx(),
-            dynamic_base: pe.has_dynamic_base(),
             force_integrity: pe.has_force_integrity(),
             gs: pe.has_gs(buffer),
-            high_entropy_va: pe.has_high_entropy_va(),
             isolation: pe.has_isolation(),
             rfg: pe.has_rfg(buffer),
             safeseh: pe.has_safe_seh(buffer),
@@ -376,17 +370,14 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "ASLR: {} Authenticode: {} CFG: {} .NET: {} NX: {} \
-            Dynamic Base: {} Force Integrity: {} GS: {} \
-            High Entropy VA: {} Isolation: {} RFG: {} SafeSEH: {} SEH: {}",
+            Force Integrity: {} GS: {} Isolation: {} RFG: {} SafeSEH: {} SEH: {}",
             self.aslr,
             self.authenticode,
             self.cfg,
             self.dotnet,
             self.nx,
-            self.dynamic_base,
             self.force_integrity,
             self.gs,
-            self.high_entropy_va,
             self.isolation,
             self.rfg,
             self.safeseh,
@@ -399,7 +390,7 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "{} {} {} {} {} {} {} {} {} {} {} {} {} {} \
-             {} {} {} {} {} {} {} {} {} {} {} {}",
+             {} {} {} {} {} {} {} {}",
             "ASLR:".bold(),
             self.aslr,
             "Authenticode:".bold(),
@@ -410,14 +401,10 @@ impl fmt::Display for CheckSecResults {
             colorize_bool!(self.dotnet),
             "NX:".bold(),
             colorize_bool!(self.nx),
-            "Dynamic Base:".bold(),
-            colorize_bool!(self.dynamic_base),
             "Force Integrity:".bold(),
             colorize_bool!(self.force_integrity),
             "GS:".bold(),
             colorize_bool!(self.gs),
-            "High Entropy VA:".bold(),
-            colorize_bool!(self.high_entropy_va),
             "Isolation:".bold(),
             colorize_bool!(self.isolation),
             "RFG:".bold(),
@@ -648,7 +635,7 @@ impl Properties for PE<'_> {
             return false;
         }
         let bitness = if self.is_64 { Bitness::B64 } else { Bitness::B32 };
-        return function_has_GE(text_bytes, bitness, ip as u64, cookie_address - self.image_base); //calculate the address of the stack cookie relative to the image base
+        return function_has_ge(text_bytes, bitness, ip as u64, cookie_address - self.image_base); //calculate the address of the stack cookie relative to the image base
         }
     }
     fn has_high_entropy_va(&self) -> bool {

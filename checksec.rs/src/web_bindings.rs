@@ -1,11 +1,11 @@
 use wasm_bindgen::prelude::*;
 use serde_derive::{Deserialize, Serialize};
-use crate::{BinResults, VERSION, checksec_core, compression::{compress, decompress, get_sha256_hash}};
+use crate::{BinResults, VERSION, checksec_core, compression::{compress, decompress}};
 
 // Hold actual checksec results along with other relevant metadata. 
 // Future-proofing this means we need to be able to modify this struct and BinResults
 #[derive(Serialize, Deserialize)]
-pub struct CheckSec_JS{
+pub struct CheckSecJs{
     version: String,
     filename: String,
     data: BinResults,
@@ -19,18 +19,18 @@ pub struct CheckSec_JS{
 pub fn checksec (buffer: &[u8], filename: String) -> Result<JsValue, JsValue> {
     match checksec_core(buffer) {
         Ok(result) => {
-            Ok(serde_wasm_bindgen::to_value(&CheckSec_JS{version: VERSION.into(), filename: filename, data: result})?)
+            Ok(serde_wasm_bindgen::to_value(&CheckSecJs{version: VERSION.into(), filename: filename, data: result})?)
         },
         Err(result) => Err(serde_wasm_bindgen::to_value(&result)?),
     }
 } 
 
 // API entrypoint for compressing and encoding a checksec result
-// consume a javascript-serialized version of CheckSec_JS
+// consume a javascript-serialized version of CheckSecJs
 // return a compressed, encoded version of this structure
 #[wasm_bindgen]
 pub fn checksec_compress(js_representation: JsValue) -> Result<JsValue, JsValue> {
-    let parsed: CheckSec_JS = serde_wasm_bindgen::from_value(js_representation)
+    let parsed: CheckSecJs = serde_wasm_bindgen::from_value(js_representation)
         .map_err(|_| JsValue::from_str("Error converting JS value to Rust struct"))?;
     
     let encoded_str = compress(&parsed)
@@ -46,7 +46,7 @@ pub fn checksec_compress(js_representation: JsValue) -> Result<JsValue, JsValue>
 // Return a decoded + decompressed version of checksec info
 #[wasm_bindgen]
 pub fn checksec_decompress(buffer: &[u8]) -> Result<JsValue, JsValue> {
-    let decompressed: Result<CheckSec_JS, String> = decompress(buffer);
+    let decompressed: Result<CheckSecJs, String> = decompress(buffer);
     match decompressed {
         Ok(value) => Ok(serde_wasm_bindgen::to_value(&value)?),
         Err(err) => Err(serde_wasm_bindgen::to_value(&err)?),

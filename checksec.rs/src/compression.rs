@@ -1,3 +1,4 @@
+//! Utilities for compression and encoding of checksec reports
 use serde::{Serialize, de::DeserializeOwned};
 use std::io::{Read, Cursor, Write};
 use flate2::{write::ZlibEncoder, read::ZlibDecoder, Compression};

@@ -148,7 +148,6 @@ export function formatSecurityName(key) {
         'authenticode': 'Authenticode',
         'cfg': 'Control Flow Guard',
         'dotnet': '.NET Framework',
-        'dynamic_base': 'Dynamic Base',
         'force_integrity': 'Force Integrity',
         'gs': 'Stack Canary (GS)',
         'high_entropy_va': 'High Entropy VA',

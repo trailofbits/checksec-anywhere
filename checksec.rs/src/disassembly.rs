@@ -1,6 +1,5 @@
 #[cfg(feature = "disassembly")]
-use iced_x86::{Decoder, DecoderOptions, Instruction, Mnemonic, FlowControl, OpKind};
-use goblin::pe::PE;
+use iced_x86::{Decoder, DecoderOptions, Instruction, Mnemonic, OpKind};
 
 #[cfg(feature = "disassembly")]
 #[derive(Clone, Copy, PartialEq)]
@@ -79,7 +78,7 @@ fn check_is_canary_epilogue(instrs: &[Instruction], bitness: Bitness, xored_cook
 #[cfg(feature = "disassembly")]
 #[allow(clippy::too_many_lines)]
 #[must_use]
-pub fn function_has_GE(bytes: &[u8], bitness: Bitness, rip: u64, cookie_address: u64) -> bool{
+pub fn function_has_ge(bytes: &[u8], bitness: Bitness, rip: u64, cookie_address: u64) -> bool{
     let mut decoder =
         Decoder::with_ip(bitness.as_u32(), bytes, rip, DecoderOptions::NONE);
 

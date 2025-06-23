@@ -28,6 +28,7 @@ use crate::ldso::{LdSoError, LdSoLookup};
 use crate::shared::{Rpath, VecRpath};
 
 static STC_CANARY_KWDS: [&str; 3] = ["__stack_chk_fail", "__stack_chk_guard", "__intel_security_cookie"];
+
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct SymbolCount{count: usize}
 
@@ -128,7 +129,7 @@ impl fmt::Display for Nx {
 }
 
 
-/// Position Independent Executable mode: `None`, `DSO`, or `PIE`
+/// Position Independent Executable mode: `None`, `DSO`, `REL` or `PIE`
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub enum PIE {
     None,

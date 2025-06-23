@@ -14,28 +14,6 @@ fn test_is_pe(){
 }
 
 #[test]
-fn test_dynamic_base_present(){
-    let buf = file_to_buf("./tests/binaries/pe/debug_directories-clang_lld.exe.bin".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
-        assert_eq!(pe_result.dynamic_base, true);
-    } 
-    else {
-        panic!("Checksec failed");
-    }
-}
-
-#[test]
-fn test_no_dynamic_base(){
-    let buf = file_to_buf("./tests/binaries/pe/lld_tls_slot_virtonly.exe.bin".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
-        assert_eq!(pe_result.dynamic_base, false);
-    }
-    else {
-        panic!("Checksec failed");
-    }
-}
-
-#[test]
 fn test_aslr_high_entropy(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-cetcompat.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
