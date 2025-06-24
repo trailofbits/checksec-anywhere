@@ -343,6 +343,8 @@ pub struct CheckSecResults {
     pub seh: bool,
     // CET Compatible
     pub cet: bool,
+    // bitness info
+    pub bitness: u64,
 }
 impl CheckSecResults {
     #[must_use]
@@ -359,7 +361,8 @@ impl CheckSecResults {
             rfg: pe.has_rfg(buffer),
             safeseh: pe.has_safe_seh(buffer),
             seh: pe.has_seh(),
-            cet: pe.is_cet_compat()
+            cet: pe.is_cet_compat(),
+            bitness: if pe.is_64 { 64 } else { 32 },
         }
     }
 }
@@ -723,7 +726,6 @@ impl Properties for PE<'_> {
             Some(debug_data) => {
                 match debug_data.ex_dll_characteristics_info {
                     Some(dllcharacteristics) => {
-                    println!("{}", IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT & dllcharacteristics.characteristics_ex);
                     (dllcharacteristics.characteristics_ex & IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT) != 0
                     }
                     _ => false,

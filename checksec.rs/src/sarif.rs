@@ -198,6 +198,13 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
                     sarif::ResultLevel::Warning
                 })
             .build(),
+            sarif::Result::builder()
+            .rule_id("bitness".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Bitness: {}", elf_result.bitness))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
     ]
 }
 
@@ -358,10 +365,16 @@ fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
                     sarif::ResultLevel::Warning
                 })
             .build(),
+            sarif::Result::builder()
+            .rule_id("bitness".to_string())
+            .message(sarif::Message::builder()
+            .text(format!("Bitness: {}", pe_result.bitness))
+            .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
     ]
 }
 
-// TODO
 fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Result> {
     vec![
             sarif::Result::builder()
@@ -478,6 +491,13 @@ fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Res
                 else{
                     sarif::ResultLevel::Warning
                 })
+            .build(),
+            sarif::Result::builder()
+            .rule_id("bitness".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Bitness: {}", macho_result.bitness))
+                .build())
+            .level(sarif::ResultLevel::Note)
             .build(),
     ]
 }

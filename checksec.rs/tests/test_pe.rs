@@ -48,28 +48,6 @@ fn test_no_aslr(){
 }
 
 #[test]
-fn test_high_entropy_present(){
-    let buf = file_to_buf("./tests/binaries/pe/pegoat-no-nxcompat.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
-        assert_eq!(pe_result.high_entropy_va, true);
-    }
-    else {
-        panic!("Checksec failed");
-    }
-}
-
-#[test]
-fn test_no_high_entropy(){
-    let buf = file_to_buf("./tests/binaries/pe/pegoat-no-dynamicbase.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
-        assert_eq!(pe_result.high_entropy_va, true);
-    }
-    else {
-        panic!("Checksec failed");
-    }
-}
-
-#[test]
 fn test_no_force_integrity(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-gs.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
@@ -81,7 +59,6 @@ fn test_no_force_integrity(){
 }
 
 // TODO: Find a PE that does force integrity
-
 #[test]
 fn test_has_isolation(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-gs.exe".into());

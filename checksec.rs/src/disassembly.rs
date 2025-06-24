@@ -39,18 +39,18 @@ fn check_is_canary_prologue(instrs: &[Instruction], bitness: Bitness, cookie_add
     if !(i0.mnemonic() == Mnemonic::Mov                 // mov rax,[<addr>] -- moving security cookie into *ax
         && i0.op1_kind() == OpKind::Memory 
         && is_ax_reg(i0.op0_register(), bitness) 
-        && get_memory_displacement(&i0, bitness) == cookie_address) { 
+        && get_memory_displacement(&i0, bitness) == cookie_address) {
         return 0;
     }
     if !(i1.mnemonic() == Mnemonic::Xor                 //xor rax, rsp -- xor security cookie with stack pointer
         && is_ax_reg(i1.op0_register(), bitness) 
-        && is_sp_reg(i1.op1_register(), bitness)){ 
+        && is_sp_or_bp_reg(i1.op1_register(), bitness)){
         return 0
     }
     if i2.mnemonic() == Mnemonic::Mov                   //mov [rsp+30h],rax -- load xor'd value into some offset of stack pointer
         && i2.op0_kind() == OpKind::Memory 
         && is_ax_reg(i2.op1_register(), bitness) 
-        && is_sp_reg(i2.memory_base(), bitness){
+        && is_sp_or_bp_reg(i2.memory_base(), bitness){
         return get_memory_displacement(&i2, bitness);
     }
     return 0;
@@ -63,18 +63,21 @@ fn check_is_canary_epilogue(instrs: &[Instruction], bitness: Bitness, xored_cook
     if !(i0.mnemonic() == Mnemonic::Mov                 // mov rcx,[<addr>] -- moving xor'd security cookie into rcx
         && i0.op1_kind() == OpKind::Memory 
         && is_cx_reg(i0.op0_register(), bitness) 
-        && get_memory_displacement(&i0, bitness) == xored_cookie_offset) { 
+        && get_memory_displacement(&i0, bitness) == xored_cookie_offset) {
         return false;
     }
     if !(i1.mnemonic() == Mnemonic::Xor                 //xor rcx, rsp -- xor stored security cookie with stack pointer again (rax and rcx should hold same value)
         && is_cx_reg(i1.op0_register(), bitness) 
-        && is_sp_reg(i1.op1_register(), bitness)){ 
+        && is_sp_or_bp_reg(i1.op1_register(), bitness)){
         return false;
     }
     return i2.mnemonic() == Mnemonic::Call;             // calling __security_check_cookie
 }
 
-// Take care of ARM64 if we want
+// TODO: Add AArch64 disassembly?
+// Helpful resources for GS detection:
+// https://www.cyberark.com/resources/threat-research-blog/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows
+// https://flysand7.hashnode.dev/how-security-cookie-works
 #[cfg(feature = "disassembly")]
 #[allow(clippy::too_many_lines)]
 #[must_use]
@@ -275,12 +278,15 @@ fn is_ax_reg(reg: iced_x86::Register, bitness: Bitness) -> bool {
     }
 }
 
-#[cfg(feature = "disassembly")]
-fn is_sp_reg(reg: iced_x86::Register, bitness: Bitness) -> bool {
-    reg == match bitness {
-        Bitness::B64 => iced_x86::Register::RSP,
-        Bitness::B32 => iced_x86::Register::ESP,
+#[cfg(feature = "disassembly")] // stack cookie is commonly xor'd with either frame pointer, or when fp is optimized out, the stack pointer.
+fn is_sp_or_bp_reg(reg: iced_x86::Register, bitness: Bitness) -> bool {
+    if bitness == Bitness::B64{
+        return reg == iced_x86::Register::RSP || reg == iced_x86::Register::RBP;
     }
+    else{
+        return reg == iced_x86::Register::ESP || reg == iced_x86::Register::EBP;
+    }
+
 }
 
 #[cfg(feature = "disassembly")]

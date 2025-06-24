@@ -253,6 +253,8 @@ pub struct CheckSecResults {
     pub dynlibs: Vec<String>,
     // number of symbols
     pub symbol_count: SymbolCount,
+    // bitness info
+    pub bitness: u64,
 }
 impl CheckSecResults {
     #[must_use]
@@ -284,6 +286,7 @@ impl CheckSecResults {
                 .map(std::string::ToString::to_string)
                 .collect(),
             symbol_count: elf.symbol_count(),
+            bitness: if elf.is_64 { 64 } else { 32 },
         }
     }
 }

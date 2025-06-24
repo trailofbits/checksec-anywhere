@@ -58,6 +58,8 @@ pub struct CheckSecResults {
     /// Load Command @rpath
     //rpath: VecRpath,
     pub rpath: VecRpath,
+    // bitness info
+    pub bitness: u64,
 }
 impl CheckSecResults {
     #[must_use]
@@ -74,6 +76,7 @@ impl CheckSecResults {
             pie: macho.has_pie(),
             restrict: macho.has_restrict(),
             rpath: macho.has_rpath(),
+            bitness: if macho.is_64 { 64 } else { 32 }
         }
     }
 }
