@@ -7,7 +7,7 @@ const output = document.getElementById("output");
 const resultsTitle = document.getElementById("resultsTitle");
 const resultsSection = document.getElementById("resultsSection");
 
-export function displayFileType(binaryType) {
+export function displayFileType(binaryType, bitness) {
     let binary_str = "";
     switch (binaryType){
         case "Macho":
@@ -22,7 +22,7 @@ export function displayFileType(binaryType) {
         default:
             binary_str = "Unknown File" // We should never hit this default case
     }
-    resultsTitle.textContent = `${binary_str} Security Analysis`;
+    resultsTitle.textContent = `${binary_str} (${bitness} bit) Security Analysis`;
     
     const fileTypeItem = document.createElement("li");
     fileTypeItem.className = "security-item";
@@ -53,17 +53,18 @@ export function displayBinaryData(binaryData) {
         const item = document.createElement("li");
         item.className = "security-item";
         
+        const formattedName = formatSecurityName(key);
+        if (!formattedName) { // not necessarily information we want to include as a row in the report
+            continue;
+        }
         const securityClass = getSecurityClass(key, value);
         const formattedValue = formatSecurityValue(key, value);
-        const formattedName = formatSecurityName(key);
         
-        // Add hash-value class for SHA256 display
-        const extraClass = key === 'sha256' ? ' hash-value' : '';
-        
+
         item.innerHTML = `
             <div class="security-item-main">
                 <span class="security-name">${formattedName}</span>
-                <span class="security-value ${securityClass}${extraClass}">${formattedValue}</span>
+                <span class="security-value ${securityClass}">${formattedValue}</span>
             </div>
         `;
         
@@ -82,6 +83,53 @@ export function displayBinaryData(binaryData) {
 }
 
 export function displayShareFunctionality(result, isSharedReport) {
+    // Add SARIF download functionality for all reports (shared and non-shared)
+    const sarifItem = document.createElement("li");
+    sarifItem.className = "security-item sarif-item";
+    sarifItem.innerHTML = `
+        <div class="security-item-main">
+            <span class="security-name">Export SARIF</span>
+            <span class="security-value info">
+                <button id="downloadSarifBtn" class="sarif-btn">Download SARIF Report</button>
+            </span>
+        </div>
+    `;
+    output.appendChild(sarifItem);
+
+    // Add SARIF download functionality
+    const downloadSarifBtn = document.getElementById('downloadSarifBtn');
+    
+    downloadSarifBtn.addEventListener('click', async () => {
+        downloadSarifBtn.textContent = 'Generating...';
+        downloadSarifBtn.disabled = true;
+        try {
+            const sarifJson = await generate_sarif_report(result);
+            const filename = result.filename + "_checksec-report.sarif" || 'checksec-report.sarif';
+            const blob = new Blob([sarifJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filename}.sarif`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            downloadSarifBtn.textContent = 'Downloaded!';
+            downloadSarifBtn.classList.add('downloaded');
+            setTimeout(() => {
+                downloadSarifBtn.textContent = 'Download SARIF Report';
+                downloadSarifBtn.classList.remove('downloaded');
+                downloadSarifBtn.disabled = false;
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to generate SARIF report:', err);
+            downloadSarifBtn.textContent = 'Error - Try Again';
+            downloadSarifBtn.disabled = false;
+        }
+    });
+
+    // Only show share functionality for non-shared reports
     if (!isSharedReport) {
         const shareItem = document.createElement("li");
         shareItem.className = "security-item share-item";
@@ -96,19 +144,6 @@ export function displayShareFunctionality(result, isSharedReport) {
             <div id="shareUrl" class="share-url" style="display: none;"></div>
         `;
         output.appendChild(shareItem);
-        
-        // Add SARIF download functionality
-        const sarifItem = document.createElement("li");
-        sarifItem.className = "security-item sarif-item";
-        sarifItem.innerHTML = `
-            <div class="security-item-main">
-                <span class="security-name">Export SARIF</span>
-                <span class="security-value info">
-                    <button id="downloadSarifBtn" class="sarif-btn">Download SARIF Report</button>
-                </span>
-            </div>
-        `;
-        output.appendChild(sarifItem);
         
         // Add share functionality
         const shareBtn = document.getElementById('shareReportBtn');
@@ -155,39 +190,6 @@ export function displayShareFunctionality(result, isSharedReport) {
                 copyBtn.disabled = false;
             }
         });
-
-        // Add SARIF download functionality
-        const downloadSarifBtn = document.getElementById('downloadSarifBtn');
-        
-        downloadSarifBtn.addEventListener('click', async () => {
-            downloadSarifBtn.textContent = 'Generating...';
-            downloadSarifBtn.disabled = true;
-            try {
-                const sarifJson = await generate_sarif_report(result);
-                const filename = result.filename + "_checksec-report" || 'checksec-report';
-                const blob = new Blob([sarifJson], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${filename}.sarif`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                downloadSarifBtn.textContent = 'Downloaded!';
-                downloadSarifBtn.classList.add('downloaded');
-                setTimeout(() => {
-                    downloadSarifBtn.textContent = 'Download SARIF Report';
-                    downloadSarifBtn.classList.remove('downloaded');
-                    downloadSarifBtn.disabled = false;
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to generate SARIF report:', err);
-                downloadSarifBtn.textContent = 'Error - Try Again';
-                downloadSarifBtn.disabled = false;
-            }
-        });
     }
 }
 
@@ -195,9 +197,10 @@ export function displayResultV1(result, isSharedReport = false) {
     output.innerHTML = "";
     
     const { version, filename, data } = result;
+    console.log("received data", data);
     const [binaryType, binaryData] = Object.entries(data)[0];
     
-    displayFileType(binaryType);
+    displayFileType(binaryType, binaryData["bitness"]);
     displayFilename(filename);
     displayBinaryData(binaryData);
     displayShareFunctionality(result, isSharedReport);

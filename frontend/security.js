@@ -61,10 +61,6 @@ export function getBooleanClass(value) {
     return value ? 'secure' : 'insecure';
 }
 
-export function getNumberClass(value) {
-    return value > 0 ? 'secure' : 'insecure';
-}
-
 // Main security class determination function
 export function getSecurityClass(key, value) {
     // Handle different value types and security features
@@ -89,7 +85,7 @@ export function getSecurityClass(key, value) {
     }
     
     if (typeof value === 'number') {
-        return getNumberClass(value);
+        return 'info';
     }
     
     return 'info';
@@ -161,7 +157,7 @@ export function formatSecurityName(key) {
         'encrypted': 'Binary Encryption',
         'restrict': 'Restrict Segment',
         'nx_heap': 'NX Heap',
-        'nx_stack': 'NX Stack'
+        'nx_stack': 'NX Stack',
     };
     
     return nameMap[key];
