@@ -104,7 +104,7 @@ export function displayShareFunctionality(result, isSharedReport) {
         downloadSarifBtn.disabled = true;
         try {
             const sarifJson = await generate_sarif_report(result);
-            const filename = result.filename + "_checksec-report.sarif" || 'checksec-report.sarif';
+            const filename = result.filename + "_checksec-report" || 'checksec-report';
             const blob = new Blob([sarifJson], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
