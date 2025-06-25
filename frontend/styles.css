@@ -163,13 +163,6 @@ body {
     border: 1px solid #444c56;
 }
 
-/* Share functionality styles */
-.share-item {
-    border-top: 1px solid #30363d;
-    margin-top: 1rem;
-    padding-top: 1rem;
-}
-
 .share-btn, .copy-btn, .sarif-btn {
     background: #161b22;
     color: #e6edf3;

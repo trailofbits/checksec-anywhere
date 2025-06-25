@@ -132,7 +132,7 @@ export function displayShareFunctionality(result, isSharedReport) {
     // Only show share functionality for non-shared reports
     if (!isSharedReport) {
         const shareItem = document.createElement("li");
-        shareItem.className = "security-item share-item";
+        shareItem.className = "security-item";
         shareItem.innerHTML = `
             <div class="security-item-main">
                 <span class="security-name">Share Report</span>
