@@ -1,0 +1,20 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build site
+        run: make checksec_web
+
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages   
+          folder: frontend  
