@@ -1,0 +1,30 @@
+{
+  "name": "checksec",
+  "type": "module",
+  "collaborators": [
+    "etke"
+  ],
+  "description": "Fast multi-platform (ELF/PE/MachO) binary checksec command line utility and library.",
+  "version": "0.0.9",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/etke/checksec.rs"
+  },
+  "files": [
+    "checksec_bg.wasm",
+    "checksec.js",
+    "checksec.d.ts"
+  ],
+  "main": "checksec.js",
+  "homepage": "https://crates.io/crates/checksec",
+  "types": "checksec.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ],
+  "keywords": [
+    "checksec",
+    "binary",
+    "security"
+  ]
+}
