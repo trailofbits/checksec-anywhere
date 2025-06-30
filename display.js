@@ -259,42 +259,41 @@ function closeTab(tabButton, tabContent) {
     const isActive = tabButton.classList.contains('active');
     const allTabs = tabsHeader.querySelectorAll('.tab-button');
     
-    // If we're closing the active tab, find the next tab to activate BEFORE removing anything
-    let nextTab = null;
-    let nextTabContent = null;
-    
-    if (isActive && allTabs.length > 1) {
-        // Find the next tab to activate (prefer the next one, fallback to previous)
-        nextTab = tabButton.nextElementSibling;
-        if (!nextTab) {
-            nextTab = tabButton.previousElementSibling;
-        }
-        
-        if (nextTab) {
-            // Find the corresponding content for the next tab
-            const nextTabIndex = nextTab.dataset.tabIndex;
-            nextTabContent = tabsContent.querySelector(`[data-tab-index="${nextTabIndex}"]`);
-        }
-    }
+    let closedIndex = tabButton.dataset.tabIndex;
+
     
     // Remove the tab and content
     tabButton.remove();
     tabContent.remove();
     
-    // Now activate the next tab if we found one
-    if (nextTab && nextTabContent) {
-        nextTab.classList.add('active');
-        nextTabContent.classList.add('active');
-        scrollToActiveTab();
-    }
+    // Update tab indices for remaining tabs trying to activate next tab
+    updateTabIndices();
     
     // If no tabs left, hide the tabs container
     if (tabsHeader.children.length === 0) {
         tabsContainer.style.display = 'none';
+    } else {
+        const remainingTabs = tabsHeader.querySelectorAll('.tab-button');
+        const remainingContents = tabsContent.querySelectorAll('.tab-content');
+
+        let hasActiveTab = false;
+
+        for (const tab of remainingTabs) {
+            if (tab.classList.contains('active')) {
+                hasActiveTab = true;
+                return;
+            }
+        }   
+
+        // Activate remaining tab
+        const chosenTab = remainingTabs[closedIndex - 1];
+        const chosenContent = remainingContents[closedIndex - 1];
+        if (chosenTab && chosenContent) {
+            chosenTab.classList.add('active');
+            chosenContent.classList.add('active');
+            scrollToActiveTab();
+        }
     }
-    
-    // Update tab indices for remaining tabs
-    updateTabIndices();
 }
 
 function updateTabIndices() {
@@ -303,10 +302,10 @@ function updateTabIndices() {
     
     allTabs.forEach((tab, index) => {
         tab.dataset.tabIndex = index;
-        const content = tabsContent.querySelector(`[data-tab-index="${index}"]`);
-        if (content) {
-            content.dataset.tabIndex = index;
-        }
+    });
+
+    allContents.forEach((content, index) => {
+        content.dataset.tabIndex = index;
     });
 }
 
@@ -340,7 +339,6 @@ function scrollToActiveTab() {
 export function displayResultV1(result, container) {
     container.innerHTML = "";
 
-    console.log("received data", result.data);
     const [binaryType, binaryData] = Object.entries(result.data)[0];
     
     displayFileHeader(binaryType, binaryData.bitness, result.filename, container);
@@ -351,7 +349,6 @@ export function displayResultV1(result, container) {
 
 export function displayResult(entry, isSharedReport = false) {
     let display_result_handler = null;
-    console.log("received entry", entry);
     switch (entry.result.version) {
         case '0.1.0':
             display_result_handler = displayResultV1
