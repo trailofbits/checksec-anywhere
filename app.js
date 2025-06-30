@@ -1,5 +1,5 @@
 import init from "./pkg/checksec.js";
-import { handleFile, setupFileInputListeners } from './fileHandler.js';
+import { handleFiles, setupFileInputListeners } from './fileHandler.js';
 import { loadReportFromURL } from './share.js';
 import { setupUrlInputListeners } from './urlHandler.js';
 import { showError } from './utils.js';

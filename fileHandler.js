@@ -1,20 +1,22 @@
 import { checksec } from './pkg/checksec.js';
-import { displayResult } from './display.js';
+import { displayResults } from './display.js';
 import { showError, hideError } from './utils.js';
 import { getIsViewingSharedReport, setIsViewingSharedReport } from './share.js';
 
 const fileInput = document.getElementById("fileInput");
 const fileInputWrapper = document.getElementById("fileInputWrapper");
-const loading = document.getElementById("loading");
+const batchLoading = document.getElementById("batchLoading");
+const currentFileSpan = document.getElementById("currentFile");
+const totalFilesSpan = document.getElementById("totalFiles");
 const resultsSection = document.getElementById("resultsSection");
 
-export async function handleFile(file) {
+export async function handleFiles(files) {
     // window related cleanup
     hideError();
-    loading.style.display = "block";
     resultsSection.style.display = "none";
+    document.getElementById("tabsContainer").style.display = "none";
     
-    // Clean up shared report state if user is uploading a new file
+    // Clean up shared report state if user is uploading new files
     if (getIsViewingSharedReport()) {
         // Remove shared report message
         const sharedReportMessage = document.querySelector('.shared-report-message');
@@ -31,23 +33,52 @@ export async function handleFile(file) {
         setIsViewingSharedReport(false);
     }
     
+    // Convert FileList to array
+    const fileArray = Array.from(files);
+    
+    await handleFileInput(fileArray);
+}
+
+export async function handleFileInput(files) {
+    batchLoading.style.display = "block";
+    
     try {
-        const buffer = await file.arrayBuffer();
-        const uint8Array = new Uint8Array(buffer);
+        const results = [];
+        const totalFiles = files.length;
+        totalFilesSpan.textContent = totalFiles;
         
-        // Run checksec analysis
-        const result = await checksec(uint8Array, file.name);
-        console.log("Checksec result:", result);
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            currentFileSpan.textContent = i + 1;
+            
+            try {
+                const buffer = await file.arrayBuffer();
+                const uint8Array = new Uint8Array(buffer);
+                
+                // Run checksec analysis
+                const result = await checksec(uint8Array, file.name);
+                results.push({ result, file, success: true });
+                console.log(`Checksec result for ${file.name}:`, result);
+            } catch (err) {
+                results.push({ 
+                    result: { error: err || "Failed to analyze binary" }, 
+                    file, 
+                    success: false 
+                });
+            }
+        }
         
-        loading.style.display = "none";
-        displayResult(result);
+        batchLoading.style.display = "none";
+        displayResults(results);
     } catch (err) {
-        console.error("Checksec error:", err);
-        showError(err.message || "Failed to analyze binary");
+        console.error("File processing error:", err);
+        batchLoading.style.display = "none";
+        showError(err.message || "Failed to process files");
     }
 }
 
 export function setupFileInputListeners() {
+    // Unified file upload handling
     fileInputWrapper.addEventListener('dragover', (e) => {
         e.preventDefault();
         fileInputWrapper.classList.add('dragover');
@@ -62,7 +93,7 @@ export function setupFileInputListeners() {
         fileInputWrapper.classList.remove('dragover');
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            handleFile(files[0]);
+            handleFiles(files);
         }
     });
 
@@ -71,9 +102,9 @@ export function setupFileInputListeners() {
     });
 
     fileInput.addEventListener("change", async (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            await handleFile(file);
+        const files = event.target.files;
+        if (files.length > 0) {
+            await handleFiles(files);
         }
     });
 } 
