@@ -13,7 +13,6 @@ const resultsSection = document.getElementById("resultsSection");
 export async function handleFiles(files) {
     // window related cleanup
     hideError();
-    resultsSection.style.display = "none";
     document.getElementById("tabsContainer").style.display = "none";
     
     // Clean up shared report state if user is uploading new files
