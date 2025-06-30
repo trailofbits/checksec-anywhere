@@ -478,6 +478,230 @@ body {
 }
 
 .footer a:hover {
-    color: #58a6ff;
+    color: #1f6feb;
     text-decoration: underline;
+}
+
+/* Batch results styles */
+.file-result-section {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background-color: #0c1116;
+}
+
+.file-result-section h3 {
+    margin-bottom: 10px;
+    color: #f0f6fc;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.file-result-section .security-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #21262d;
+}
+
+.file-result-section .security-item:last-child {
+    border-bottom: none;
+}
+
+/* Batch loading styles */
+#batchLoading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    background: #161b22;
+    border-radius: 8px;
+    color: #1f6feb;
+}
+
+#batchLoading p {
+    margin-top: 10px;
+    font-size: 1rem;
+}
+
+#currentFile, #totalFiles {
+    font-weight: 600;
+    color: #f0f6fc;
+}
+
+/* Responsive adjustments for batch results */
+@media (max-width: 600px) {
+    .file-result-section {
+        padding: 10px;
+        margin-top: 15px;
+    }
+    
+    .file-result-section h3 {
+        font-size: 1rem;
+    }
+}
+
+/* Tabbed interface styles */
+.tabs-container {
+    background: #161b22;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    border: 1px solid #30363d;
+    margin-top: 20px;
+}
+
+.tabs-header {
+    display: flex;
+    border-bottom: 1px solid #30363d;
+    background: #0c1116;
+    border-radius: 8px 8px 0 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #444c56 #0c1116;
+}
+
+.tabs-header::-webkit-scrollbar {
+    height: 6px;
+}
+
+.tabs-header::-webkit-scrollbar-track {
+    background: #0c1116;
+}
+
+.tabs-header::-webkit-scrollbar-thumb {
+    background: #444c56;
+    border-radius: 3px;
+}
+
+.tab-button {
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    min-width: 120px;
+    width: auto;
+    text-align: center;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.tab-text {
+    flex: 1;
+    text-align: center;
+}
+
+.tab-close {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #8b949e;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.tab-close:hover {
+    color: #e6edf3;
+    background: #21262d;
+}
+
+.tab-button:hover .tab-close {
+    opacity: 1;
+}
+
+.tab-button:hover {
+    color: #e6edf3;
+    background: #21262d;
+}
+
+.tab-button.active {
+    color: #1f6feb;
+    border-bottom-color: #1f6feb;
+    background: #161b22;
+}
+
+.tab-button.error {
+    color: #f85149;
+    border-bottom-color: #f85149;
+}
+
+.tab-button.success {
+    color: #56d364;
+    border-bottom-color: #56d364;
+}
+
+.tabs-content {
+    padding: 0;
+}
+
+.tab-content {
+    display: none;
+    padding: 30px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.tab-content h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #f0f6fc;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #30363d;
+}
+
+/* Responsive adjustments for tabs */
+@media (max-width: 600px) {
+    .tabs-header {
+        flex-wrap: wrap;
+    }
+    
+    .tab-button {
+        min-width: 100px;
+        padding: 10px 15px;
+        font-size: 0.8rem;
+    }
+    
+    .tab-content {
+        padding: 20px;
+    }
+    
+    .tab-content h2 {
+        font-size: 1.3rem;
+    }
+}
+
+/* Error message styling in tabs */
+.error-message {
+    background: #3d1a1a;
+    color: #f85149;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #da3633;
+    margin-top: 20px;
+}
+
+.error-message p {
+    margin: 10px 0;
+    font-size: 1rem;
+}
+
+.error-message p:first-child {
+    margin-top: 0;
+    font-weight: 600;
+}
+
+.error-message p:last-child {
+    margin-bottom: 0;
 } 

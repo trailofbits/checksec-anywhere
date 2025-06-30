@@ -15,9 +15,8 @@
         <div class="input-section">
             <div class="input-container">
                 <div id="fileInputWrapper" class="input-box">
-                    <input type="file" id="fileInput" accept="*/*" style="display: none;">
-                    <p>Drop a file or click to browse</p>
-                    <p class="or-text">Supports ELF, PE, and Mach-O binaries</p>
+                    <input type="file" id="fileInput" accept="*/*" style="display: none;" multiple>
+                    <p>Drop files or click to browse</p>
                 </div>
                 
                 <div class="input-divider">
@@ -36,11 +35,17 @@
             <p>Analyzing binary...</p>
         </div>
 
+        <div id="batchLoading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing <span id="currentFile">0</span> of <span id="totalFiles">0</span> files...</p>
+        </div>
+
         <div id="error" class="error" style="display: none;"></div>
 
-        <div id="resultsSection" class="results-section" style="display: none;">
-            <h2 id="resultsTitle">Security Analysis Results</h2>
-            <ul id="output" class="security-list"></ul>
+        <!-- Tabbed results -->
+        <div id="tabsContainer" class="tabs-container" style="display: none;">
+            <div id="tabsHeader" class="tabs-header"></div>
+            <div id="tabsContent" class="tabs-content"></div>
         </div>
     </div>
 

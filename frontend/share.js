@@ -1,13 +1,11 @@
 import { checksec_compress, checksec_decompress } from "./pkg/checksec.js";
-import { displayResult } from "./display.js";
+import { displayResults } from "./display.js";
 import { showError } from "./utils.js";
 
 // Global variable to store current analysis data for sharing
 let isViewingSharedReport = false;
-
 export async function generateShareableURL(analysisResult) {
     try {
-        console.log(analysisResult);
         const compressedData = await checksec_compress(analysisResult);
         const currentURL = new URL(window.location);
         currentURL.hash = `data=${compressedData}`;
@@ -24,15 +22,14 @@ export async function loadReportFromURL() {
     if (hash.startsWith('#data=')) {
         try {
             const compressedData = hash.substring(6); // Remove '#data='
-            console.log(compressedData);
             const bytes = new Uint8Array(compressedData.length);
             for (let i = 0; i < compressedData.length; i++) {
                 bytes[i] = compressedData.charCodeAt(i);
             }
-            const data = await checksec_decompress(bytes);
+            const result = await checksec_decompress(bytes);
             // Display the loaded report
             isViewingSharedReport = true;
-            displayResult(data, true);
+            displayResults([{ result, file: null, success: true }], true);
             
         } catch (err) {
             console.error('Failed to load report from URL:', err);
