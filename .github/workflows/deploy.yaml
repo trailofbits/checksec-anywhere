@@ -1,8 +1,5 @@
 name: Build and Deploy
 
-permissions:
-  contents: write
-
 on:
   push:
     branches:
@@ -10,16 +7,32 @@ on:
 
 jobs:
   build:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
       - uses: dtolnay/rust-toolchain@stable
+      
       - name: Install wasm-pack
         run: cargo install wasm-pack
 
       - name: Build site
         run: make checksec_web
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: frontend
 
       - name: Deploy to GitHub Pages
         id: deployment
