@@ -21,7 +21,6 @@ jobs:
       - name: Build site
         run: make checksec_web
 
-      - uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages   
-          folder: frontend  
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

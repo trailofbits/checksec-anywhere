@@ -348,16 +348,6 @@ export function displayResultV1(result, container) {
 }
 
 export function displayResult(entry, isSharedReport = false) {
-    let display_result_handler = null;
-    switch (entry.result.version) {
-        case '0.1.0':
-            display_result_handler = displayResultV1
-            break;
-        default:
-            console.warn(`Unknown version ${entry.result.version}, falling back to v1 display`);
-            display_result_handler = displayResultV1;
-    }
-
     let filename = "";
     if (!isSharedReport) { 
         filename = entry.file.name // use provided filename, as checksec may error out
@@ -368,12 +358,22 @@ export function displayResult(entry, isSharedReport = false) {
 
     let container = setupResultTab(filename);
 
-    if (entry.success) {
-        display_result_handler(entry.result, container);
-    }
-    else {
+    if (!entry.success) {
         display_error_handler(filename, entry.result.error, container);
+        return;
     }
+
+    let display_result_handler = null;
+    switch (entry.result.version) {
+        case '0.1.0':
+            display_result_handler = displayResultV1
+            break;
+        default:
+            console.warn(`Unknown version ${entry.result.version}, falling back to v1 display`);
+            display_result_handler = displayResultV1;
+    }
+
+    display_result_handler(entry.result, container);
 }
 
 export function displayResults(batchResults, isSharedReport = false) {
