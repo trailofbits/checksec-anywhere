@@ -229,7 +229,7 @@ pub struct CheckSecResults {
     pub canary: bool,
     /// Clang Control Flow Integrity (*CFLAGS=*`-fsanitize=cfi-*`)
     pub clang_cfi: bool,
-    /// Clang SafeStack (*CFLAGS=*`-fsanitize=safe-stack`)
+    /// `Clang SafeStack` (*CFLAGS=*`-fsanitize=safe-stack`)
     pub clang_safestack: bool,
     /// Stack Clash Protection (*CFLAGS=*`-fstack-clash-protection`)
     pub stack_clash_protection: bool,
@@ -263,7 +263,7 @@ impl CheckSecResults {
         let fortify = match (fortified, fortifiable) {
             (0, 0) => Fortify::Undecidable, 
             (f, v) if f == v => Fortify::Full,
-            (f, _) if f == 0 => Fortify::None,
+            (0, _) => Fortify::None,
             (f, v) if f < v => Fortify::Partial,
             _ => Fortify::Undecidable, // This case should never happen
         };
@@ -619,7 +619,7 @@ impl Properties for Elf<'_> {
                 break;
             }
         }
-        return Nx::Disabled;
+        Nx::Disabled
     }
     fn has_pie(&self) -> PIE {
         if self.header.e_type == ET_DYN {
@@ -663,7 +663,7 @@ impl Properties for Elf<'_> {
         VecRpath::new(vec![Rpath::None])
     }
     fn symbol_count(&self) -> SymbolCount {
-        return SymbolCount { count: self.syms.len() };
+        SymbolCount { count: self.syms.len() }
     }
     fn has_runpath(&self) -> VecRpath {
         if self.dynamic.is_some() {

@@ -1,4 +1,4 @@
-use checksec::{macho, shared, checksec_core, BinResults};
+use checksec::{shared, checksec_core, BinResults};
 mod utils;
 use utils::file_to_buf;
 
@@ -13,6 +13,7 @@ fn test_is_macho(){
     }
 }
 
+#[allow(non_snake_case)]
 #[test]
 fn test_has_PIE(){
     let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
@@ -24,6 +25,7 @@ fn test_has_PIE(){
     }
 }
 
+#[allow(non_snake_case)]
 #[test]
 fn test_no_PIE(){
     let buf = file_to_buf("./tests/binaries/Mach-O/rel_cl.o".into());
@@ -150,7 +152,7 @@ fn test_not_fortified(){
 
 
 #[test]
-fn test_NX_stack(){
+fn test_nx_stack(){
     let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.nx_stack, true);
@@ -163,7 +165,7 @@ fn test_NX_stack(){
 // TODO: Find a binary with executable stack
 
 #[test]
-fn test_X_heap(){
+fn test_nx_heap(){
     let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.nx_heap, false);

@@ -475,7 +475,7 @@ fn parse_single_file(
 fn parse_file_impl(
     file: &Path,
     _scan_dynlibs: bool,
-    _lookup: &Option<Lookup>,
+    _lookup: Option<&Lookup>,
     cache: &mut Option<Cache>,
 ) -> Result<Vec<Binary>, ParseError> {
     parse(file, cache)
@@ -593,7 +593,7 @@ fn parse_single_file(
 
     let lookup = Lookup { elf: LibraryLookup::new()? };
 
-    parse_file_impl(file, true, &Some(lookup), &mut None)
+    parse_file_impl(file, true, Some(&lookup), &mut None)
 }
 
 fn walk(
@@ -602,7 +602,7 @@ fn walk(
     output_settings: &output::Settings,
 ) {
     let lookup = if scan_dynlibs {
-        Some(Lookup {
+        Some(&Lookup {
             #[cfg(all(target_os = "linux", feature = "elf"))]
             elf: LibraryLookup::new().unwrap_or_else(|err| {
                 eprintln!("Failed to initialize library lookup: {err}");
@@ -625,7 +625,7 @@ fn walk(
             parse_file_impl(
                 entry.path(),
                 scan_dynlibs,
-                &lookup,
+                lookup,
                 &mut Some(Arc::clone(&cache)),
             )
             .ok()

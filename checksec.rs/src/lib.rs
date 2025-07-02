@@ -76,14 +76,59 @@ pub enum BinResults {
     Macho(macho::CheckSecResults),
 }
 
+/// Analyze a binary file buffer and extract security-related results.
+///
+/// Parses the input buffer to detect its binary format (ELF, PE, or Mach-O)
+/// and runs the appropriate security checks for that format.
+///
+/// # Arguments
+///
+/// * `buffer` - A byte slice representing the raw contents of a binary file.
+///
+/// # Returns
+///
+/// * `Ok(BinResults)` containing the parsed security check results for the
+///   detected binary format.
+///
+/// * `Err(String)` if parsing or analysis fails.
+///
+/// # Errors
+///
+/// This function returns an error in the following cases:
+/// - If the binary format is not recognized or supported (e.g., fat Mach-O binaries).
+/// - If parsing the binary buffer fails due to invalid or corrupted data.
+/// - If the binary type is unsupported by the analysis logic.
+///
+/// # Supported formats
+///
+/// - ELF binaries
+/// - PE (Portable Executable) binaries
+/// - Mach-O binaries (single-architecture only)
+///
+/// # Examples
+///
+/// ```
+/// use std::fs;
+/// use checksec::{checksec_core, BinResults};
+///
+/// // Read the binary file into a byte buffer
+/// let buffer = fs::read("tests/binaries/elf/all").expect("Failed to read binary");
+///
+/// // Run the security checks
+/// if let Ok(BinResults::Elf(elf_results)) = checksec_core(&buffer) {
+///     println!("Analysis Results: {}", elf_results);
+/// } else {
+///     println!("Not an ELF binary or error occurred.");
+/// }
+/// ```
 pub fn checksec_core (buffer: &[u8]) -> Result<BinResults, String> {
-    match Object::parse(&buffer){
+    match Object::parse(buffer){
         Ok(Object::Elf(elf)) => {
-            let result = elf::CheckSecResults::parse(&elf, &buffer);
+            let result = elf::CheckSecResults::parse(&elf, buffer);
             Ok(BinResults::Elf(result))
         },
         Ok(Object::PE(pe)) => {
-            let result = pe::CheckSecResults::parse(&pe, &buffer);
+            let result = pe::CheckSecResults::parse(&pe, buffer);
             Ok(BinResults::Pe(result))
         },
         Ok(Object::Mach(mach)) => match mach {
@@ -91,7 +136,7 @@ pub fn checksec_core (buffer: &[u8]) -> Result<BinResults, String> {
                 let result = macho::CheckSecResults::parse(&mach); 
                 Ok(BinResults::Macho(result))
             }
-            _ => { Err("fat binaries currently not supported".into()) }
+            Mach::Fat(_) => { Err("fat binaries currently not supported".into()) }
         },
         Err(res) => {Err(res.to_string())},
         _ => {  Err("unsupported file type".into()) }

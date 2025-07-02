@@ -25,6 +25,7 @@ opt-level = 'z'   # Optimize for size
 panic = 'abort'   # Abort on panic
 
 [dependencies]
+ringbuffer = "0.15.0"
 sha2 = "0.10.9"
 hex = "0.4.3"
 serde-sarif = "0.8.0"

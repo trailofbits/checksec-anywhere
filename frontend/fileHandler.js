@@ -57,7 +57,6 @@ export async function handleFileInput(files) {
                 // Run checksec analysis
                 const result = await checksec(uint8Array, file.name);
                 results.push({ result, file, success: true });
-                console.log(`Checksec result for ${file.name}:`, result);
             } catch (err) {
                 results.push({ 
                     result: { error: err || "Failed to analyze binary" }, 

@@ -5,6 +5,20 @@ use serde_json;
 
 const SARIF_VERSION: &str = "2.1.0";
 
+/// Converts a binary analysis result into a SARIF JSON report.
+///
+/// # Arguments
+///
+/// * `result` - A reference to a `BinResults` enum containing the analyzed binary data.
+///
+/// # Returns
+///
+/// Returns a `serde_json::Result<String>` containing the formatted SARIF JSON string on success.
+///
+/// # Errors
+///
+/// This function may return a serialization error (`serde_json::Error`) if
+/// generating the SARIF JSON string fails.
 pub fn get_sarif_report(result: &BinResults) -> serde_json::Result<String> {
     match result {
         BinResults::Elf(elf) => build_sarif_for_checksec(create_elf_results(elf)),
@@ -13,11 +27,10 @@ pub fn get_sarif_report(result: &BinResults) -> serde_json::Result<String> {
     }
 }
 
-// setting properties common to all results
 fn build_sarif_for_checksec(results: Vec<sarif::Result>) -> serde_json::Result<String> {
     let tool = sarif::Tool::builder()
         .driver(sarif::ToolComponent::builder()
-            .name(format!("checksec-anywhere"))
+            .name("checksec-anywhere")
             .build())
         .build();
 
@@ -34,11 +47,10 @@ fn build_sarif_for_checksec(results: Vec<sarif::Result>) -> serde_json::Result<S
         .version(SARIF_VERSION.to_string())
         .build();
     let json = serde_json::to_string_pretty(&sarif)?;
-    return Ok(json);
-    
+    Ok(json)
 }
 
-
+#[allow(clippy::too_many_lines)]
 fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
     vec![
         sarif::Result::builder()
@@ -93,8 +105,7 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
             .level(match elf_result.fortify{
                 elf::Fortify::Full => sarif::ResultLevel::None,
                 elf::Fortify::Undecidable => sarif::ResultLevel::Note,
-                elf::Fortify::Partial => sarif::ResultLevel::Warning,
-                elf::Fortify::None => sarif::ResultLevel::Warning,
+                elf::Fortify::Partial | elf::Fortify::None => sarif::ResultLevel::Warning,
             })
             .build(),
             sarif::Result::builder()
@@ -105,8 +116,7 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
             .level(match elf_result.fortify{
                 elf::Fortify::Full => sarif::ResultLevel::None,
                 elf::Fortify::Undecidable => sarif::ResultLevel::Note,
-                elf::Fortify::Partial => sarif::ResultLevel::Warning,
-                elf::Fortify::None => sarif::ResultLevel::Warning,
+                elf::Fortify::Partial | elf::Fortify::None => sarif::ResultLevel::Warning,
             })
             .build(),
             sarif::Result::builder()
@@ -117,8 +127,7 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
             .level(match elf_result.fortify{
                 elf::Fortify::Full => sarif::ResultLevel::None,
                 elf::Fortify::Undecidable => sarif::ResultLevel::Note,
-                elf::Fortify::Partial => sarif::ResultLevel::Warning,
-                elf::Fortify::None => sarif::ResultLevel::Warning,
+                elf::Fortify::Partial | elf::Fortify::None => sarif::ResultLevel::Warning,
             })
             .build(),
             sarif::Result::builder()
@@ -139,8 +148,7 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
                 .build())
             .level(match elf_result.pie{
                 elf::PIE::None => sarif::ResultLevel::Warning,
-                elf::PIE::DSO => sarif::ResultLevel::Note,
-                elf::PIE::REL => sarif::ResultLevel::Note,
+                elf::PIE::DSO | elf::PIE::REL => sarif::ResultLevel::Note,
                 elf::PIE::PIE => sarif::ResultLevel::None,
             })
             .build(),
@@ -150,8 +158,7 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
                 .text(format!("Relocation Read-Only: {}", elf_result.relro.to_string().trim_end()))
                 .build())
             .level(match elf_result.relro{
-                elf::Relro::None => sarif::ResultLevel::Warning,
-                elf::Relro::Partial => sarif::ResultLevel::Warning,
+                elf::Relro::Partial | elf::Relro::None => sarif::ResultLevel::Warning,
                 elf::Relro::Full => sarif::ResultLevel::None,
             })
             .build(),
@@ -208,6 +215,7 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
     ]
 }
 
+#[allow(clippy::too_many_lines)]
 fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
     vec![
             sarif::Result::builder()
@@ -216,8 +224,7 @@ fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
                 .text(format!("Address Space Layout Randomization: {}", pe_result.aslr))
                 .build())
             .level(match pe_result.aslr {
-                pe::ASLR::None => sarif::ResultLevel::Warning,
-                pe::ASLR::DynamicBase => sarif::ResultLevel::Warning,
+                pe::ASLR::DynamicBase | pe::ASLR::None => sarif::ResultLevel::Warning,
                 pe::ASLR::HighEntropyVa => sarif::ResultLevel::None,
             })
             .build(),
@@ -375,6 +382,7 @@ fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
     ]
 }
 
+#[allow(clippy::too_many_lines)]
 fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Result> {
     vec![
             sarif::Result::builder()

@@ -2,7 +2,7 @@
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use std::{fmt, usize};
+use std::{fmt};
 
 #[cfg(feature = "elf")]
 use checksec::elf;

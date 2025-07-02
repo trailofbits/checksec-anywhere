@@ -234,10 +234,10 @@ fn get_load_config_val(
     }
 }
 
-fn get_text_section<'a>(pe: &PE, bytes: &'a [u8]) -> (&'a [u8], u32) {
-    for section in pe.sections.iter(){
+fn get_text_section<'a>(pe: &PE, bytes: &'a [u8]) -> Option<(&'a [u8], u32)> {
+    for section in &pe.sections{
         let trimmed_bytes = &section.name.split(|&b| b == 0).next().unwrap_or(&[]);
-        let section_name = std::str::from_utf8(&trimmed_bytes).unwrap_or_default();
+        let section_name = std::str::from_utf8(trimmed_bytes).unwrap_or_default();
         if section_name != ".text"{
             continue
         }
@@ -245,10 +245,10 @@ fn get_text_section<'a>(pe: &PE, bytes: &'a [u8]) -> (&'a [u8], u32) {
                 usize::try_from(section.pointer_to_raw_data).unwrap()
                     ..usize::try_from(section.pointer_to_raw_data + section.virtual_size).unwrap(),
             ) {
-                return (execbytes, section.virtual_address);
+                return Some((execbytes, section.virtual_address));
             }
     }
-    return (&[], 0);
+    None
 }
 
 /// Address Space Layout Randomization: `None`, `DYNBASE`, or `HIGHENTROPYVA`
@@ -630,15 +630,14 @@ impl Properties for PE<'_> {
         return cookie_address > 0;
         #[cfg(feature = "disassembly")]
         {
-        if cookie_address == 0 {
-            return false;
-        }
-        let (text_bytes, ip) = get_text_section(self, bytes);
-        if text_bytes.is_empty() && ip == 0{ //getting text section failed
-            return false;
-        }
-        let bitness = if self.is_64 { Bitness::B64 } else { Bitness::B32 };
-        return function_has_ge(text_bytes, bitness, ip as u64, cookie_address - self.image_base); //calculate the address of the stack cookie relative to the image base
+            if cookie_address == 0 {
+                return false;
+            }
+            if let Some((text_bytes, ip)) = get_text_section(self, bytes){
+                let bitness = if self.is_64 { Bitness::B64 } else { Bitness::B32 };
+                return function_has_ge(text_bytes, bitness, u64::from(ip), cookie_address - self.image_base);
+            }
+            false
         }
     }
     fn has_high_entropy_va(&self) -> bool {

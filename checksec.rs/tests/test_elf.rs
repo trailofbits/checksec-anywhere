@@ -68,6 +68,7 @@ fn test_full_relro(){
     }
 }
 
+#[allow(non_snake_case)]
 #[test]
 fn test_PIE_enabled(){
     let buf = file_to_buf("./tests/binaries/elf/partial".into());
@@ -79,6 +80,7 @@ fn test_PIE_enabled(){
     }
 }
 
+#[allow(non_snake_case)]
 #[test]
 fn test_PIE_DSO(){
     let buf = file_to_buf("./tests/binaries/elf/dso.so".into());
@@ -90,6 +92,7 @@ fn test_PIE_DSO(){
     }
 }
 
+#[allow(non_snake_case)]
 #[test]
 fn test_PIE_REL(){
     let buf = file_to_buf("./tests/binaries/elf/rel.o".into());
@@ -101,6 +104,7 @@ fn test_PIE_REL(){
     }
 }
 
+#[allow(non_snake_case)]
 #[test]
 fn test_PIE_none(){
     let buf = file_to_buf("./tests/binaries/elf/nolibc".into());
@@ -164,6 +168,7 @@ fn test_fortify_full(){
     }
 }
 
+#[allow(non_snake_case)]
 #[test]
 fn test_nx_Na(){
     let buf = file_to_buf("./tests/binaries/elf/rel.o".into());

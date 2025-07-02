@@ -7,7 +7,31 @@ use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
 use bincode; 
 
-
+/// Compresses and base64-encodes a serializable data structure.
+///
+/// This function serializes the given data using `bincode`, compresses the serialized bytes
+/// with zlib compression, and then encodes the compressed data into a base64 string.
+///
+/// # Type Parameters
+///
+/// * `T` - The type of the data to be compressed, which must implement `Serialize`.
+///
+/// # Arguments
+///
+/// * `results` - A reference to the data structure to be compressed and encoded.
+///
+/// # Returns
+///
+/// Returns a `Result` containing:
+/// - `Ok(String)` with the base64-encoded compressed representation of the input data.
+/// - `Err(String)` describing the failure reason.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - Serialization to binary using `bincode` fails.
+/// - Compression using zlib fails during writing.
+/// - Finishing the compression (flushing) encounters an IO error.
 pub fn compress<T: Serialize>(results: &T) -> Result<String, String> {
     let serialized = bincode::serialize(&results)
         .map_err(|_| "Result serialization to binary failed".to_string())?;
@@ -21,16 +45,36 @@ pub fn compress<T: Serialize>(results: &T) -> Result<String, String> {
         .finish()
         .map_err(|_| "IO error occurred during flush".to_string())?;
 
-    let encoded = BASE64_STANDARD.encode(compressed);
-    Ok(encoded) // original type -> serialized -> compressed -> B64
+    let encoded_compressed = BASE64_STANDARD.encode(compressed);
+    Ok(encoded_compressed) // original type -> serialized -> compressed -> B64
 }
 
+/// Decompress and deserialize base64-encoded compressed data.
+///
+/// Takes a UTF-8 byte slice containing base64-encoded zlib-compressed serialized data
+/// and returns the deserialized result.
+///
+/// # Type Parameters
+///
+/// * `T` - The type to deserialize into, implementing `DeserializeOwned`.
+///
+/// # Arguments
+///
+/// * `encoded_bytes` - Base64-encoded compressed input bytes.
+///
+/// # Returns
+///
+/// `Ok(T)` if successful, or `Err(String)` describing the failure.
+///
+/// # Errors
+///
+/// Returns an error if decoding, decompression, or deserialization fails.
 pub fn decompress<T: DeserializeOwned>(encoded_bytes: &[u8]) -> Result<T, String> {
 
-    let encoded = std::str::from_utf8(encoded_bytes)
+    let encoded_compressed = std::str::from_utf8(encoded_bytes)
     .map_err(|_| "Error converting bytes to utf".to_string())?.to_string();
 
-    let compressed = BASE64_STANDARD.decode(encoded)
+    let compressed = BASE64_STANDARD.decode(encoded_compressed)
     .map_err(|_| "Decoding failed".to_string())?;
 
     let cursor = Cursor::new(compressed);
@@ -46,7 +90,16 @@ pub fn decompress<T: DeserializeOwned>(encoded_bytes: &[u8]) -> Result<T, String
     Ok(deserialized) // input bytes -> B64 -> bytes -> decompress -> deserialize
 }
 
-// Given a string of bytes (file contents), get the sha-256 hash
+/// Computes the SHA-256 hash of the given byte slice.
+///
+/// # Arguments
+///
+/// * `bytes` - A slice of bytes representing the input data to hash.
+///
+/// # Returns
+///
+/// A `Vec<u8>` containing the 32-byte SHA-256 hash of the input data.
+#[allow(clippy::must_use_candidate)]
 pub fn get_sha256_hash(bytes: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
     hasher.update(bytes);

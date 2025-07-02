@@ -1,5 +1,6 @@
 #[cfg(feature = "disassembly")]
 use iced_x86::{Decoder, DecoderOptions, Instruction, Mnemonic, OpKind};
+use ringbuffer::{AllocRingBuffer, RingBuffer};
 
 #[cfg(feature = "disassembly")]
 #[derive(Clone, Copy, PartialEq)]
@@ -32,7 +33,7 @@ enum SCPSteps {
     EndCmp,
 }
 
-fn check_is_canary_prologue(instrs: &[Instruction], bitness: Bitness, cookie_address: u64) -> u64{
+fn check_is_canary_prologue(instrs: &AllocRingBuffer<Instruction>, bitness: Bitness, cookie_address: u64) -> u64{
     let i0 = instrs[0];
     let i1 = instrs[1];
     let i2 = instrs[2];
@@ -53,10 +54,10 @@ fn check_is_canary_prologue(instrs: &[Instruction], bitness: Bitness, cookie_add
         && is_sp_or_bp_reg(i2.memory_base(), bitness){
         return get_memory_displacement(&i2, bitness);
     }
-    return 0;
+    0
 }
 
-fn check_is_canary_epilogue(instrs: &[Instruction], bitness: Bitness, xored_cookie_offset: u64) -> bool{
+fn check_is_canary_epilogue(instrs: &AllocRingBuffer<Instruction>, bitness: Bitness, xored_cookie_offset: u64) -> bool{
     let i0 = instrs[0];
     let i1 = instrs[1];
     let i2 = instrs[2];
@@ -71,42 +72,45 @@ fn check_is_canary_epilogue(instrs: &[Instruction], bitness: Bitness, xored_cook
         && is_sp_or_bp_reg(i1.op1_register(), bitness)){
         return false;
     }
-    return i2.mnemonic() == Mnemonic::Call;             // calling __security_check_cookie
+    i2.mnemonic() == Mnemonic::Call                     // calling __security_check_cookie
 }
 
-// TODO: Add AArch64 disassembly?
-// Helpful resources for GS detection:
-// https://www.cyberark.com/resources/threat-research-blog/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows
-// https://flysand7.hashnode.dev/how-security-cookie-works
+/// [COOKIE DETAILS] (<https://www.cyberark.com/resources/threat-research-blog/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows>)
 #[cfg(feature = "disassembly")]
-#[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn function_has_ge(bytes: &[u8], bitness: Bitness, rip: u64, cookie_address: u64) -> bool{
-    let mut decoder =
-        Decoder::with_ip(bitness.as_u32(), bytes, rip, DecoderOptions::NONE);
+    let mut decoder = Decoder::with_ip(bitness.as_u32(), bytes, rip, DecoderOptions::NONE);
 
     let mut instr = Instruction::default();
-    let mut instr_window: Vec<Instruction> = Vec::new();
     let mut stack_cookie_invokations = 0;
     let mut xored_canary_addr = 0;
 
+    let mut instruction_window = AllocRingBuffer::new(3);
+    let success = (0..2).all(|_| {
+        if !decoder.can_decode() {
+            return false;
+        }
+        decoder.decode_out(&mut instr);
+        instruction_window.push(instr);
+        true
+    });
+
+    if !success {
+        return false;
+    }
+
     while decoder.can_decode() {
         decoder.decode_out(&mut instr);
-        if instr_window.len() == 3{
-            instr_window.remove(0);
+        instruction_window.push(instr);
+        if xored_canary_addr == 0 {
+            xored_canary_addr = check_is_canary_prologue(&instruction_window, bitness, cookie_address);
         }
-        instr_window.push(instr.clone());
-        if xored_canary_addr == 0 && instr_window.len() == 3{
-            xored_canary_addr = check_is_canary_prologue(&instr_window, bitness, cookie_address);
-        }
-        if instr_window.len() == 3 && xored_canary_addr > 0{
-            if check_is_canary_epilogue(&instr_window, bitness, xored_canary_addr){
-                stack_cookie_invokations += 1;
-                xored_canary_addr = 0;
-            }
+        if xored_canary_addr > 0 && check_is_canary_epilogue(&instruction_window, bitness, xored_canary_addr) {
+            stack_cookie_invokations += 1;
+            xored_canary_addr = 0;
         }
     }
-    return stack_cookie_invokations > 0;
+    stack_cookie_invokations > 0
 }
 
 
@@ -283,10 +287,7 @@ fn is_sp_or_bp_reg(reg: iced_x86::Register, bitness: Bitness) -> bool {
     if bitness == Bitness::B64{
         return reg == iced_x86::Register::RSP || reg == iced_x86::Register::RBP;
     }
-    else{
-        return reg == iced_x86::Register::ESP || reg == iced_x86::Register::EBP;
-    }
-
+    reg == iced_x86::Register::ESP || reg == iced_x86::Register::EBP
 }
 
 #[cfg(feature = "disassembly")]
@@ -300,6 +301,6 @@ fn is_cx_reg(reg: iced_x86::Register, bitness: Bitness) -> bool {
 fn get_memory_displacement(instr: &Instruction, bitness: Bitness) -> u64 {
     match bitness {
         Bitness::B64 => instr.memory_displacement64(),
-        Bitness::B32 => instr.memory_displacement32() as u64,
+        Bitness::B32 => u64::from(instr.memory_displacement32()),
     }
 }

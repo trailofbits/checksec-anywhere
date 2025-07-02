@@ -1,4 +1,4 @@
-use checksec::{pe, shared, checksec_core, BinResults};
+use checksec::{pe, checksec_core, BinResults};
 mod utils;
 use utils::file_to_buf;
 
@@ -73,7 +73,7 @@ fn test_has_isolation(){
 // TODO: Find a PE that does not have isolation
 
 #[test]
-fn test_Nx_present(){
+fn test_nx_present(){
     let buf = file_to_buf("./tests/binaries/pe/well_formed_import.exe.bin".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.nx, true);
@@ -84,7 +84,7 @@ fn test_Nx_present(){
 }
 
 #[test]
-fn test_no_Nx(){
+fn test_no_nx(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-nxcompat.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.nx, false);
@@ -95,7 +95,7 @@ fn test_no_Nx(){
 }
 
 #[test]
-fn test_Seh_present(){
+fn test_seh_present(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-cetcompat.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.seh, true);
