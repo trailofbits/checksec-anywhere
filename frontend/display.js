@@ -259,7 +259,7 @@ function closeTab(tabButton, tabContent) {
     const isActive = tabButton.classList.contains('active');
     const allTabs = tabsHeader.querySelectorAll('.tab-button');
     
-    let closedIndex = tabButton.dataset.tabIndex;
+    let closedIndex = tabButton.dataset.tabIndex == 0 ? 1 : tabButton.dataset.tabIndex;
 
     
     // Remove the tab and content
