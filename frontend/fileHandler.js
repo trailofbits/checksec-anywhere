@@ -40,7 +40,7 @@ export async function handleFiles(files) {
 
 export async function handleFileInput(files) {
     batchLoading.style.display = "block";
-    
+    const batchStartTime = performance.now();
     try {
         const results = [];
         const totalFiles = files.length;
@@ -73,6 +73,9 @@ export async function handleFileInput(files) {
         batchLoading.style.display = "none";
         showError(err.message || "Failed to process files");
     }
+    const batchEndTime = performance.now();
+    const totalBatchTime = batchEndTime - batchStartTime;
+    console.log(`BATCH TIME: ${totalBatchTime}`);
 }
 
 export function setupFileInputListeners() {
