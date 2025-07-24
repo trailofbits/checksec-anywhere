@@ -8,8 +8,8 @@ use crate::{BinResults, VERSION, checksec_core, sarif, compression::{compress, d
 pub struct CheckSecJs{
     version: String,
     filename: String,
-    data: BinResults,
-   // sha256_hash: Vec<u8> -- Adds significant length to the url generated for the user
+    report: Option<BinResults>,
+    error: Option<String>
 }
 
 /// Performs the core checksec functionality on the given binary data.
@@ -34,12 +34,27 @@ pub struct CheckSecJs{
 /// The error is serialized to a `JsValue` suitable for consumption in the WebAssembly context.
 #[wasm_bindgen]
 pub fn checksec (buffer: &[u8], filename: String) -> Result<JsValue, JsValue> {
-    match checksec_core(buffer) {
-        Ok(data) => {
-            Ok(serde_wasm_bindgen::to_value(&CheckSecJs{version: VERSION.into(), filename, data})?)
+    let result_vec: Vec<CheckSecJs> = checksec_core(buffer)
+    .into_iter().map(|result| match result{
+        Ok(report) => {
+            CheckSecJs{
+                version: VERSION.into(),
+                filename: filename.clone(),
+                report: Some(report),
+                error: None
+            }
         },
-        Err(data) => Err(serde_wasm_bindgen::to_value(&data)?),
-    }
+        Err(errstring) => {
+            CheckSecJs{
+                version: VERSION.into(),
+                filename: filename.clone(),
+                report: None,
+                error: Some(errstring)
+            }
+        }
+    })
+    .collect();
+     Ok(serde_wasm_bindgen::to_value(&result_vec)?)
 } 
 
 /// Compresses and encodes a serialized `CheckSecJs` structure.
@@ -122,9 +137,12 @@ pub fn checksec_decompress(buffer: &[u8]) -> Result<JsValue, JsValue> {
 pub fn generate_sarif_report(js_representation: JsValue) -> Result<JsValue, JsValue> {
     let report: CheckSecJs = serde_wasm_bindgen::from_value(js_representation)
         .map_err(|_| JsValue::from_str("Error converting JS value to Rust struct"))?;
-    match sarif::get_sarif_report(&report.data) {
-        Ok(report_string) => Ok(serde_wasm_bindgen::to_value(&report_string)?),
-        Err(err) => Err(serde_wasm_bindgen::to_value(&err.to_string())?),
+    if let Some(report_results) = &report.report{
+        return match sarif::get_sarif_report(report_results) {
+            Ok(report_string) => Ok(serde_wasm_bindgen::to_value(&report_string)?),
+            Err(err) => Err(serde_wasm_bindgen::to_value(&err.to_string())?),
+        }
     }
+    Err(serde_wasm_bindgen::to_value("Report property empty")?)
 }
     

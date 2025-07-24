@@ -338,8 +338,7 @@ function scrollToActiveTab() {
 
 export function displayResultV1(result, container) {
     container.innerHTML = "";
-
-    const [binaryType, binaryData] = Object.entries(result.data)[0];
+    const [binaryType, binaryData] = Object.entries(result.report)[0];
     
     displayFileHeader(binaryType, binaryData.bitness, result.filename, container);
     displayFileRow(result.filename, container);
@@ -347,14 +346,8 @@ export function displayResultV1(result, container) {
     displayShareFunctionality(result, container);
 }
 
-export function displayResult(entry, isSharedReport = false) {
-    let filename = "";
-    if (!isSharedReport) { 
-        filename = entry.file.name // use provided filename, as checksec may error out
-    }
-    else {
-        filename = entry.result.filename // use filename reported in shared url
-    }
+export function displayResult(entry) {
+    const filename = entry.result.filename // use filename reported in shared url
 
     let container = setupResultTab(filename);
 
@@ -376,10 +369,10 @@ export function displayResult(entry, isSharedReport = false) {
     display_result_handler(entry.result, container);
 }
 
-export function displayResults(batchResults, isSharedReport = false) {
+export function displayResults(batchResults) {
 
     batchResults.forEach(entry => {
-        displayResult(entry, isSharedReport)
+        displayResult(entry)
     });
 
     // deactivate all other active tabs

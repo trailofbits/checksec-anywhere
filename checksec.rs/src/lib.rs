@@ -45,7 +45,7 @@
 //!
 
 use goblin::{Object};
-use goblin::mach::Mach;
+use goblin::mach::{Mach, MultiArch, SingleArch::Archive, SingleArch::MachO};
 use serde_derive::{Deserialize, Serialize};
 
 #[cfg(feature = "disassembly")]
@@ -69,7 +69,7 @@ pub mod sarif;
 
 const VERSION: &str = "0.1.0";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum BinResults {
     Elf(elf::CheckSecResults),
     Pe(pe::CheckSecResults),
@@ -79,7 +79,8 @@ pub enum BinResults {
 /// Analyze a binary file buffer and extract security-related results.
 ///
 /// Parses the input buffer to detect its binary format (ELF, PE, or Mach-O)
-/// and runs the appropriate security checks for that format.
+/// and runs the appropriate security checks for that format. 
+/// For multi-architecture Mach-O binaries, multiple security reports are returned.
 ///
 /// # Arguments
 ///
@@ -115,30 +116,84 @@ pub enum BinResults {
 /// let buffer = fs::read("tests/binaries/elf/all").expect("Failed to read binary");
 ///
 /// // Run the security checks
-/// if let Ok(BinResults::Elf(elf_results)) = checksec_core(&buffer) {
-///     println!("Analysis Results: {}", elf_results);
-/// } else {
-///     println!("Not an ELF binary or error occurred.");
-/// }
+/// checksec_core(&buffer).iter().for_each(|result| {
+///     match result {
+///         Ok(bin_results) => println!("Analysis Results: {:?}", bin_results),
+///         Err(error) => println!("An Error Occurred: {}", error)
+///     }
+/// });
 /// ```
-pub fn checksec_core (buffer: &[u8]) -> Result<BinResults, String> {
+pub fn checksec_core (buffer: &[u8]) -> Vec<Result<BinResults, String>> {
     match Object::parse(buffer){
         Ok(Object::Elf(elf)) => {
             let result = elf::CheckSecResults::parse(&elf, buffer);
-            Ok(BinResults::Elf(result))
+            vec![Ok(BinResults::Elf(result))]
         },
         Ok(Object::PE(pe)) => {
             let result = pe::CheckSecResults::parse(&pe, buffer);
-            Ok(BinResults::Pe(result))
+            vec![Ok(BinResults::Pe(result))]
         },
         Ok(Object::Mach(mach)) => match mach {
             Mach::Binary(mach) => {
                 let result = macho::CheckSecResults::parse(&mach); 
-                Ok(BinResults::Macho(result))
+                vec![Ok(BinResults::Macho(result))]
             }
-            Mach::Fat(_) => { Err("fat binaries currently not supported".into()) }
+            Mach::Fat(mach) => process_fat_mach(mach, buffer)
         },
-        Err(res) => {Err(res.to_string())},
-        _ => {  Err("unsupported file type".into()) }
+        Ok(Object::Unknown(magic_num)) => {
+            vec![Err(format!("Unknown magic number: {}", magic_num))]
+        }
+        Err(res) => vec![Err(res.to_string())],
+        _ => vec![Err("unsupported file type".to_string())]
     }
 }
+
+fn process_fat_mach(fatmach: MultiArch, bytes: &[u8]) -> Vec<Result<BinResults, String>> {
+    let mut results_vec: Vec<Result<BinResults, String>> = Vec::new();
+    for (idx, fatarch) in fatmach.iter_arches().enumerate() {
+        if let Ok(container) = fatmach.get(idx) {
+            match container {
+                MachO(mach) => { 
+                    let result = macho::CheckSecResults::parse(&mach);
+                    results_vec.push(Ok(BinResults::Macho(result)));
+                }
+                Archive(archive) => {
+                    match fatarch {
+                        Ok(fatarch) => {
+                            if let Some(archive_bytes) = bytes.get(
+                                fatarch.offset as usize
+                                ..(fatarch.offset + fatarch.size)
+                                as usize,
+                            ) {
+                                results_vec.append(&mut parse_archive(
+                                    &archive,
+                                    archive_bytes
+                                ));
+                            } else {
+                                results_vec.push(Err("Archive refers to invalid position".to_string()));
+                            }
+                        },
+                        _ => results_vec.push(Err("fatarch enumeration failed".to_string()))
+                    }
+                }
+            }
+        }
+    }
+    results_vec
+}
+
+fn parse_archive(
+    archive: &goblin::archive::Archive,
+    bytes: &[u8],
+) -> Vec<Result<BinResults, String>> {
+    archive
+        .members()
+        .iter()
+        .filter_map(|member_name| match archive.extract(member_name, bytes) {
+            Ok(ext_bytes) => Some(checksec_core(ext_bytes)),
+            Err(_) => None
+        })
+        .flatten()
+        .collect()
+}
+

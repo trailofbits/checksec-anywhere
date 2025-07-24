@@ -2,6 +2,7 @@
 #[cfg(feature = "color")]
 use colored::Colorize;
 use goblin::mach::load_command::CommandVariant;
+use goblin::mach::constants::cputype::get_arch_name_from_types;
 use goblin::mach::MachO;
 use serde::{Deserialize, Serialize};
 use crate::shared::{Rpath, VecRpath};
@@ -37,6 +38,8 @@ const MH_NO_HEAP_EXECUTION: u32 = 0x0100_0000;
 pub struct CheckSecResults {
     /// Automatic Reference Counting
     pub arc: bool,
+    /// Target architecture for the binary
+    pub architecture: String,
     /// Stack Canary
     pub canary: bool,
     /// Code Signature (codesign)
@@ -66,6 +69,7 @@ impl CheckSecResults {
     pub fn parse(macho: &MachO) -> Self {
         Self {
             arc: macho.has_arc(),
+            architecture: macho.get_architecture(),
             canary: macho.has_canary(),
             code_signature: macho.has_code_signature(),
             encrypted: macho.has_encrypted(),
@@ -87,10 +91,11 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "ARC: {} Canary: {} Code Signature: {} Encryption: {} \
+            "ARC: {} Architecture: {} Canary: {} Code Signature: {} Encryption: {} \
             Fortify: {} Fortified {:2} NX Heap: {} \
             NX Stack: {} PIE: {} Restrict: {} RPath: {}",
             self.arc,
+            self.architecture,
             self.canary,
             self.code_signature,
             self.encrypted,
@@ -108,10 +113,12 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} \
+            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} \
             {} {} {} {} {} {}",
             "ARC:".bold(),
             colorize_bool!(self.arc),
+            "Architecture:".bold(),
+            self.architecture,
             "Canary:".bold(),
             colorize_bool!(self.canary),
             "Code Signature:".bold(),
@@ -157,6 +164,8 @@ impl fmt::Display for CheckSecResults {
 pub trait Properties {
     /// check import names for `_objc_release`
     fn has_arc(&self) -> bool;
+    /// Get target architecture for the binary, helpful when analyzing multi-architecture Mach-O files.
+    fn get_architecture(&self) -> String;
     /// check import names for `___stack_chk_fail` or `___stack_chk_guard`
     fn has_canary(&self) -> bool;
     /// check data size of code signature in load commands
@@ -185,6 +194,12 @@ impl Properties for MachO<'_> {
         self.symbols()
         .flatten()
         .any(|(name, _)| name == "_objc_release" || name == "_objc_alloc")
+    }
+    fn get_architecture(&self) -> String {
+        match get_arch_name_from_types(self.header.cputype(), self.header.cpusubtype()) {
+            Some(arch) => arch.to_string(),
+            None => "Unknown".to_string()
+        }
     }
     fn has_canary(&self) -> bool {
         self.symbols()

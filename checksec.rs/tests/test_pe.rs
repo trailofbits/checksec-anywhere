@@ -6,7 +6,7 @@ use utils::file_to_buf;
 #[test]
 fn test_is_pe(){
     let buf = file_to_buf("./tests/binaries/pe/debug_directories-clang_lld.exe.bin".into());
-    if let Ok(BinResults::Pe(_)) = checksec_core(&buf) {
+    if let Ok(BinResults::Pe(_)) = checksec_core(&buf).iter().next().unwrap() {
     }
     else{
         panic!("Expected Binary to be classified as PE32+");
@@ -16,7 +16,7 @@ fn test_is_pe(){
 #[test]
 fn test_aslr_high_entropy(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-cetcompat.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.aslr, pe::ASLR::HighEntropyVa);
     }
     else {
@@ -27,7 +27,7 @@ fn test_aslr_high_entropy(){
 #[test]
 fn test_aslr_wo_high_entropy(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-highentropyva.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.aslr, pe::ASLR::DynamicBase);
     }
     else {
@@ -39,7 +39,7 @@ fn test_aslr_wo_high_entropy(){
 #[test]
 fn test_no_aslr(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-ineffective-cfg-no-dynamicbase.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.aslr, pe::ASLR::None);
     }
     else {
@@ -50,7 +50,7 @@ fn test_no_aslr(){
 #[test]
 fn test_no_force_integrity(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-gs.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.force_integrity, false);
     }
     else {
@@ -62,7 +62,7 @@ fn test_no_force_integrity(){
 #[test]
 fn test_has_isolation(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-gs.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.isolation, true);
     }
     else {
@@ -75,7 +75,7 @@ fn test_has_isolation(){
 #[test]
 fn test_nx_present(){
     let buf = file_to_buf("./tests/binaries/pe/well_formed_import.exe.bin".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.nx, true);
     }
     else {
@@ -86,7 +86,7 @@ fn test_nx_present(){
 #[test]
 fn test_no_nx(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-nxcompat.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.nx, false);
     }
     else {
@@ -97,7 +97,7 @@ fn test_no_nx(){
 #[test]
 fn test_seh_present(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-cetcompat.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.seh, true);
     }
     else {
@@ -110,7 +110,7 @@ fn test_seh_present(){
 #[test]
 fn test_cfg_present(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-yes-cfg.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.cfg, true);
     }
     else {
@@ -121,7 +121,7 @@ fn test_cfg_present(){
 #[test]
 fn test_no_cfg(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.cfg, false);
     }
     else {
@@ -134,7 +134,7 @@ fn test_no_cfg(){
 #[test]
 fn test_no_rfg(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.rfg, false);
     }
     else {
@@ -147,7 +147,7 @@ fn test_no_rfg(){
 #[test]
 fn test_no_safeseh(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.safeseh, false);
     }
     else {
@@ -158,7 +158,7 @@ fn test_no_safeseh(){
 #[test]
 fn test_gs_present(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-yes-cfg.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.gs, true);
     }
     else {
@@ -169,7 +169,7 @@ fn test_gs_present(){
 #[test]
 fn test_no_gs(){
     let buf = file_to_buf("./tests/binaries/pe/debug_directories-clang_lld.exe.bin".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.gs, false);
     }
     else {
@@ -180,7 +180,7 @@ fn test_no_gs(){
 #[test]
 fn test_authenticode_present(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-authenticode.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.authenticode, true);
     }
     else {
@@ -191,7 +191,7 @@ fn test_authenticode_present(){
 #[test]
 fn test_no_authenticode(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-highentropyva.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.authenticode, false);
     }
     else {
@@ -204,7 +204,7 @@ fn test_no_authenticode(){
 #[test]
 fn test_no_dotnet(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.dotnet, false);
     }
     else {
@@ -215,7 +215,7 @@ fn test_no_dotnet(){
 #[test]
 fn test_is_cet_compat(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-cetcompat.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.cet, true);
     }
     else {
@@ -226,7 +226,7 @@ fn test_is_cet_compat(){
 #[test]
 fn test_not_cet_compat(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-ineffective-cfg-no-dynamicbase.exe".into());
-    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
+    if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf).iter().next().unwrap(){
         assert_eq!(pe_result.cet, false);
     }
     else {

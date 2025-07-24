@@ -158,6 +158,7 @@ export function formatSecurityName(key) {
         'restrict': 'Restrict Segment',
         'nx_heap': 'NX Heap',
         'nx_stack': 'NX Stack',
+        'architecture': 'Architecture'
     };
     
     return nameMap[key];

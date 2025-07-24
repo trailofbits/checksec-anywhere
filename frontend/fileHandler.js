@@ -42,7 +42,7 @@ export async function handleFileInput(files) {
     batchLoading.style.display = "block";
     const batchStartTime = performance.now();
     try {
-        const results = [];
+        const reports = [];
         const totalFiles = files.length;
         totalFilesSpan.textContent = totalFiles;
         
@@ -50,24 +50,27 @@ export async function handleFileInput(files) {
             const file = files[i];
             currentFileSpan.textContent = i + 1;
             
-            try {
-                const buffer = await file.arrayBuffer();
-                const uint8Array = new Uint8Array(buffer);
-                
+            const buffer = await file.arrayBuffer();
+            const uint8Array = new Uint8Array(buffer);
+            try{
                 // Run checksec analysis
-                const result = await checksec(uint8Array, file.name);
-                results.push({ result, file, success: true });
-            } catch (err) {
-                results.push({ 
-                    result: { error: err || "Failed to analyze binary" }, 
-                    file, 
-                    success: false 
-                });
+                const results = await checksec(uint8Array, file.name);
+                results.forEach((result, index) => {
+                    if (result.report !== null && result.report !== undefined) {
+                        reports.push({ result, success: true });
+                    }
+                    else{
+                        reports.push({ result: { error: result.error || "Failed to analyze binary", filename: result.filename}, success: false }); //Goblin-related error
+                    }
+                })
+            }
+            catch (err) {
+                reports.push({ result: { error: "Failed to analyze binary", filename: result.filename} , success: false }); //serde-wasm error
             }
         }
         
         batchLoading.style.display = "none";
-        displayResults(results);
+        displayResults(reports);
     } catch (err) {
         console.error("File processing error:", err);
         batchLoading.style.display = "none";
