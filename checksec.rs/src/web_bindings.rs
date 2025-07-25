@@ -135,14 +135,12 @@ pub fn checksec_decompress(buffer: &[u8]) -> Result<JsValue, JsValue> {
 /// - Serialization of the SARIF report string into a `JsValue` fails.
 #[wasm_bindgen]
 pub fn generate_sarif_report(js_representation: JsValue) -> Result<JsValue, JsValue> {
-    let report: CheckSecJs = serde_wasm_bindgen::from_value(js_representation)
+    let report: Vec<CheckSecJs> = serde_wasm_bindgen::from_value(js_representation)
         .map_err(|_| JsValue::from_str("Error converting JS value to Rust struct"))?;
-    if let Some(report_results) = &report.report{
-        return match sarif::get_sarif_report(report_results) {
-            Ok(report_string) => Ok(serde_wasm_bindgen::to_value(&report_string)?),
-            Err(err) => Err(serde_wasm_bindgen::to_value(&err.to_string())?),
-        }
+    let reports = report.into_iter().filter_map(|result| result.report).collect();
+    match sarif::get_sarif_report(&reports) {
+        Ok(report_string) => Ok(serde_wasm_bindgen::to_value(&report_string)?),
+        Err(err) => Err(serde_wasm_bindgen::to_value(&err.to_string())?),
     }
-    Err(serde_wasm_bindgen::to_value("Report property empty")?)
 }
     

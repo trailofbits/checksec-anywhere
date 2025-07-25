@@ -7,6 +7,9 @@ const tabsContainer = document.getElementById("tabsContainer");
 const tabsHeader = document.getElementById("tabsHeader");
 const tabsContent = document.getElementById("tabsContent");
 
+// Global storage for tab results
+const tabResults = new Map();
+
 export function displayFileHeader(binaryType, bitness, filename, container) {
     let binary_str = "";
     switch (binaryType){
@@ -111,7 +114,7 @@ export function displayShareFunctionality(result, container) {
         downloadSarifBtn.textContent = 'Generating...';
         downloadSarifBtn.disabled = true;
         try {
-            const sarifJson = await generate_sarif_report(result);
+            const sarifJson = await generate_sarif_report([result]);
             const filename = result.filename + "_checksec-report" || 'checksec-report';
             const blob = new Blob([sarifJson], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -259,8 +262,10 @@ function closeTab(tabButton, tabContent) {
     const isActive = tabButton.classList.contains('active');
     const allTabs = tabsHeader.querySelectorAll('.tab-button');
     
-    let closedIndex = tabButton.dataset.tabIndex == 0 ? 1 : tabButton.dataset.tabIndex;
+    const tabIndex = tabButton.dataset.tabIndex;
+    let closedIndex = tabIndex == 0 ? 1 : tabIndex
 
+    tabResults.delete(tabIndex);
     
     // Remove the tab and content
     tabButton.remove();
@@ -272,6 +277,7 @@ function closeTab(tabButton, tabContent) {
     // If no tabs left, hide the tabs container
     if (tabsHeader.children.length === 0) {
         tabsContainer.style.display = 'none';
+        tabResults.clear();
     } else {
         const remainingTabs = tabsHeader.querySelectorAll('.tab-button');
         const remainingContents = tabsContent.querySelectorAll('.tab-content');
@@ -294,6 +300,7 @@ function closeTab(tabButton, tabContent) {
             scrollToActiveTab();
         }
     }
+    updateCombinedSarifButton();
 }
 
 function updateTabIndices() {
@@ -366,6 +373,8 @@ export function displayResult(entry) {
             display_result_handler = displayResultV1;
     }
 
+    const tabIndex = container.dataset.tabIndex;
+    tabResults.set(tabIndex, entry);
     display_result_handler(entry.result, container);
 }
 
@@ -406,4 +415,86 @@ export function displayResults(batchResults) {
 
     tabsContainer.style.display = "block";
     tabsContainer.scrollIntoView({ behavior: 'smooth' });
+    addCombinedSarifButton();
+}
+
+function addCombinedSarifButton() {
+    const allTabs = tabsHeader.querySelectorAll(".tab-button");
+    
+    // Only show combined button if there are multiple tabs
+    if (allTabs.length <= 1) {
+        return;
+    }
+    
+    // Check if combined button already exists
+    const existingButton = document.getElementById('combinedSarifBtn');
+    if (existingButton) {
+        updateCombinedButtonCount(existingButton);
+        return;
+    }
+    
+    // Count successful results only
+    const successfulResults = [];
+    console.log(tabResults);
+    tabResults.forEach((entry, tabIndex) => {
+        if (entry.success) {
+            successfulResults.push(entry.result);
+        }
+    });
+    
+    if (successfulResults.length === 0) {
+        return;
+    }
+    
+    // Create combined SARIF button
+    const combinedButton = document.createElement("button");
+    combinedButton.id = "combinedSarifBtn";
+    combinedButton.className = "combined-sarif-btn";
+    combinedButton.innerHTML = `
+        <span>Download Combined SARIF Report (${successfulResults.length} files)</span>
+    `;
+    
+    // Position the button above the tabs
+    tabsContainer.insertBefore(combinedButton, tabsHeader);
+    
+    // Add click handler
+    combinedButton.addEventListener('click', async () => {
+        combinedButton.disabled = true;
+        combinedButton.innerHTML = '<span>Generating combined report...</span>';
+        
+        try {
+            // Generate combined SARIF report with only successful results
+            console.log(successfulResults);
+            const combinedSarif = await generate_sarif_report(successfulResults);
+            
+            // Download the combined report
+            const filename = `combined-checksec-report-${new Date().toISOString().split('T')[0]}`;
+            const blob = new Blob([combinedSarif], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filename}.sarif`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            combinedButton.innerHTML = '<span>Combined report downloaded</span>';
+        } catch (err) {
+            console.error('Failed to generate combined SARIF report:', err);
+            combinedButton.innerHTML = '<span>Error - Try Again</span>';
+        }
+    });
+}
+
+function updateCombinedButtonCount(button) {
+    const successfulResults = [];
+    tabResults.forEach((entry, tabIndex) => {
+        if (entry.success) {
+            successfulResults.push(entry.result);
+        }
+    });
+    
+    button.innerHTML = `<span>Download Combined SARIF Report (${successfulResults.length} files)</span>`;
+    button.disabled = false;
 }

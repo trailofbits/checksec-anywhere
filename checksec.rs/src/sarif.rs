@@ -19,27 +19,33 @@ const SARIF_VERSION: &str = "2.1.0";
 ///
 /// This function may return a serialization error (`serde_json::Error`) if
 /// generating the SARIF JSON string fails.
-pub fn get_sarif_report(result: &BinResults) -> serde_json::Result<String> {
-    match result {
-        BinResults::Elf(elf) => build_sarif_for_checksec(create_elf_results(elf)),
-        BinResults::Pe(pe) => build_sarif_for_checksec(create_pe_results(pe)),
-        BinResults::Macho(macho) => build_sarif_for_checksec(create_macho_results(macho)),
-    }
+pub fn get_sarif_report(results: &Vec<BinResults>) -> serde_json::Result<String> {
+    let mut sarif_results: Vec<Vec<sarif::Result>> = Vec::new();
+    results.iter()
+    .for_each(|result| match result {
+            BinResults::Elf(elf) => sarif_results.push(create_elf_results(elf)),
+            BinResults::Pe(pe) => sarif_results.push(create_pe_results(pe)),
+            BinResults::Macho(macho) => sarif_results.push(create_macho_results(macho)),
+    });
+    build_sarif_for_checksec(sarif_results)
 }
 
-fn build_sarif_for_checksec(results: Vec<sarif::Result>) -> serde_json::Result<String> {
+fn build_sarif_for_checksec(results: Vec<Vec<sarif::Result>>) -> serde_json::Result<String> {
     let tool = sarif::Tool::builder()
         .driver(sarif::ToolComponent::builder()
             .name("checksec-anywhere")
             .build())
         .build();
 
-    let runs = vec![
+    let runs: Vec<sarif::Run> = results.into_iter()
+    .map(|result| {
         sarif::Run::builder()
-            .tool(tool)
-            .results(results)
-            .build()
-    ];
+        .tool(tool.clone())
+        .results(result)
+        .build()
+    })
+    .collect();
+
 
     let sarif = sarif::Sarif::builder()
         .schema(sarif::SCHEMA_URL)

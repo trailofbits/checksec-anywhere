@@ -704,4 +704,40 @@ body {
 
 .error-message p:last-child {
     margin-bottom: 0;
+}
+
+/* Combined SARIF button styles */
+.combined-sarif-btn {
+    background: #1f6feb;
+    color: #ffffff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+    transition: all 0.2s ease;
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.combined-sarif-btn:hover {
+    background: #1a5bb8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(31, 111, 235, 0.3);
+}
+
+.combined-sarif-btn:disabled {
+    background: #444c56;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.combined-sarif-btn span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 } 
