@@ -1,5 +1,5 @@
 //! Convert checksec report to sarif
-use crate::{BinResults, macho, elf, pe};
+use crate::{BinResults, macho, elf, pe, shared::{Rpath, VecRpath}};
 use serde_sarif::sarif;
 use serde_json;
 
@@ -167,24 +167,14 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
             .message(sarif::Message::builder()
                 .text(format!("Runtime search path: {}", elf_result.rpath))
                 .build())
-            .level(if elf_result.rpath.is_empty() {
-                    sarif::ResultLevel::None
-                }
-                else{
-                    sarif::ResultLevel::Warning
-                })
+            .level(check_rpath(&elf_result.rpath))
             .build(),
             sarif::Result::builder()
             .rule_id("runpath".to_string())
             .message(sarif::Message::builder()
                 .text(format!("Runtime search path (overrrides rpath): {}", elf_result.runpath))
                 .build())
-            .level(if elf_result.runpath.is_empty() {
-                    sarif::ResultLevel::None
-                }
-                else{
-                    sarif::ResultLevel::Warning
-                })
+            .level(check_rpath(&elf_result.runpath))
             .build(),
             sarif::Result::builder()
             .rule_id("dynlibs".to_string())
@@ -493,12 +483,7 @@ fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Res
             .message(sarif::Message::builder()
                 .text(format!("Runtime path: {}", macho_result.rpath))
                 .build())
-            .level(if macho_result.rpath.is_empty() {
-                    sarif::ResultLevel::None
-                }
-                else{
-                    sarif::ResultLevel::Warning
-                })
+            .level(check_rpath(&macho_result.rpath))
             .build(),
             sarif::Result::builder()
             .rule_id("bitness".to_string())
@@ -508,4 +493,24 @@ fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Res
             .level(sarif::ResultLevel::Note)
             .build(),
     ]
+}
+
+fn check_rpath(paths: &VecRpath) -> sarif::ResultLevel {
+    if paths.is_empty(){
+        return sarif::ResultLevel::None;
+    }
+    if paths.len() != 1 {
+       return sarif::ResultLevel::Warning;
+    }
+    match &paths[0] {
+        Rpath::Yes(path) | Rpath::YesRW(path) => {
+            if path == "None" {
+                sarif::ResultLevel::None
+            }
+            else{
+                sarif::ResultLevel::Warning
+            }
+        },
+        Rpath::None => sarif::ResultLevel::None
+    }
 }
