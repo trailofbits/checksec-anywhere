@@ -5,11 +5,11 @@ use std::path::PathBuf;
 use std::{fmt};
 
 #[cfg(feature = "elf")]
-use checksec::elf;
+use crate::elf;
 #[cfg(feature = "macho")]
-use checksec::macho;
+use crate::macho;
 #[cfg(feature = "pe")]
-use checksec::pe;
+use crate::pe;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum BinType {
@@ -25,6 +25,7 @@ pub enum BinType {
     MachO32,
     #[cfg(feature = "macho")]
     MachO64,
+    Error,
 }
 #[cfg(not(feature = "color"))]
 impl fmt::Display for BinType {
@@ -42,6 +43,7 @@ impl fmt::Display for BinType {
             Self::MachO32 => write!(f, "MachO32"),
             #[cfg(feature = "macho")]
             Self::MachO64 => write!(f, "MachO64"),
+            Self::Error => write!(f, "Error")
         }
     }
 }
@@ -61,6 +63,7 @@ impl fmt::Display for BinType {
             Self::MachO32 => write!(f, "{}", "MachO32".bold().underline()),
             #[cfg(feature = "macho")]
             Self::MachO64 => write!(f, "{}", "MachO64".bold().underline()),
+            Self::Error => write!(f, "{}", "Error".bold().underline()),
         }
     }
 }
@@ -73,6 +76,7 @@ pub enum BinSpecificProperties {
     PE(pe::CheckSecResults),
     #[cfg(feature = "macho")]
     MachO(macho::CheckSecResults),
+    Error(String),
 }
 impl fmt::Display for BinSpecificProperties {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -83,6 +87,7 @@ impl fmt::Display for BinSpecificProperties {
             Self::PE(b) => write!(f, "{b}"),
             #[cfg(feature = "macho")]
             Self::MachO(b) => write!(f, "{b}"),
+            Self::Error(b) => write!(f, "{b}"),
         }
     }
 }
@@ -102,7 +107,7 @@ impl Blob {
     }
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct Binary {
     pub file: PathBuf,
     pub blobs: Vec<Blob>,

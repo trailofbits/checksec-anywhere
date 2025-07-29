@@ -29,7 +29,7 @@ export async function loadReportFromURL() {
             const result = await checksec_decompress(bytes);
             // Display the loaded report
             isViewingSharedReport = true;
-            displayResults([{ result, file: null, success: true }], true);
+            displayResults([await checksec_decompress(bytes)]);
             
         } catch (err) {
             console.error('Failed to load report from URL:', err);

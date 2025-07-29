@@ -26,6 +26,7 @@ panic = 'abort'   # Abort on panic
 
 [dependencies]
 ringbuffer = "0.15.0"
+url = "2.5.4"
 sha2 = "0.10.9"
 hex = "0.4.3"
 serde-sarif = "0.8.0"

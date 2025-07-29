@@ -1,52 +1,7 @@
 #![warn(clippy::pedantic)]
-//! ![checksec](https://raw.githubusercontent.com/etke/checksec.rs/master/resources/checksec.svg?sanitize=true)
-//!
-//! Checksec is a standalone command line utility and library that provides
-//! binary executable security-oriented property checks for `ELF`, `PE`, and
-//! `MachO`executables.
-//!
-//! **Structures**
-//!
-//! The full checksec results can be retrieved from the implemented
-//! `*CheckSecResult` structures for a given binary by passing a
-//! [`goblin::Object`](https://docs.rs/goblin/latest/goblin/enum.Object.html)
-//! object to the parse method.
-//!
-//! * [`checksec::elf::CheckSecResults`](crate::elf::CheckSecResults)
-//! * [`checksec::macho::CheckSecResults`](crate::macho::CheckSecResults)
-//! * [`checksec::pe::CheckSecResults`](crate::pe::CheckSecResults)
-//!
-//! ```rust
-//! use checksec::elf::CheckSecResults as ElfCheckSecResults;
-//! use checksec::macho::CheckSecResults as MachOCheckSecResults;
-//! use checksec::pe::CheckSecResults as PECheckSecResults;
-//! ```
-//!
-//! **Traits**
-//!
-//! Add the associated `*Properties` trait to the imports as shown below to
-//! have direct access to the security property check functions for a given
-//! binary executable format.
-//!
-//! * [`checksec::elf::Properties`](crate::elf::Properties)
-//! * [`checksec::macho::Properties`](crate::macho::Properties)
-//! * [`checksec::pe::Properties`](crate::pe::Properties)
-//!
-//! ```rust
-//! use checksec::elf::Properties as ElfProperties;
-//! use checksec::macho::Properties as MachOProperties;
-//! use checksec::pe::Properties as PEProperties;
-//! ```
-//!
-//! Refer to the generated docs or the examples directory
-//! [examples/](https://github.com/etke/checksec.rs/tree/master/examples)
-//! for examples of working with both `*Properties` traits and
-//! `*CheckSecResults` structs.
-//!
-
 use goblin::{Object};
 use goblin::mach::{Mach, MultiArch, SingleArch::Archive, SingleArch::MachO};
-use serde_derive::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[cfg(feature = "disassembly")]
 pub mod disassembly;
@@ -66,15 +21,10 @@ pub mod shared;
 pub mod web_bindings;
 pub mod compression;
 pub mod sarif;
+pub mod binary;
+use binary::{BinSpecificProperties, BinType, Binary, Blob};
 
 const VERSION: &str = "0.1.0";
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum BinResults {
-    Elf(elf::CheckSecResults),
-    Pe(pe::CheckSecResults),
-    Macho(macho::CheckSecResults),
-}
 
 /// Analyze a binary file buffer and extract security-related results.
 ///
@@ -86,16 +36,16 @@ pub enum BinResults {
 ///
 /// * `buffer` - A byte slice representing the raw contents of a binary file.
 ///
+/// * `filename` - A string representing the name of the file under analysis.
+///
 /// # Returns
 ///
-/// * `Ok(BinResults)` containing the parsed security check results for the
-///   detected binary format.
-///
-/// * `Err(String)` if parsing or analysis fails.
+/// * `Binary` containing the parsed security check results for the
+///   detected binary format. Upion failure, corresponding blob binary types of are of type 'error'.
 ///
 /// # Errors
 ///
-/// This function returns an error in the following cases:
+/// This function returns a blob containing an error in the following cases:
 /// - If the binary format is not recognized or supported (e.g., fat Mach-O binaries).
 /// - If parsing the binary buffer fails due to invalid or corrupted data.
 /// - If the binary type is unsupported by the analysis logic.
@@ -104,58 +54,89 @@ pub enum BinResults {
 ///
 /// - ELF binaries
 /// - PE (Portable Executable) binaries
-/// - Mach-O binaries (single-architecture only)
+/// - Mach-O binaries (single-architecture and multi-architecture)
 ///
 /// # Examples
 ///
 /// ```
 /// use std::fs;
-/// use checksec::{checksec_core, BinResults};
+/// use checksec::checksec;
 ///
 /// // Read the binary file into a byte buffer
-/// let buffer = fs::read("tests/binaries/elf/all").expect("Failed to read binary");
+/// let filename = "tests/binaries/elf/all".into();
+/// let buffer = fs::read(&filename).expect("Failed to read binary");
 ///
 /// // Run the security checks
-/// checksec_core(&buffer).iter().for_each(|result| {
-///     match result {
-///         Ok(bin_results) => println!("Analysis Results: {:?}", bin_results),
-///         Err(error) => println!("An Error Occurred: {}", error)
-///     }
-/// });
+/// let binary_info = checksec(&buffer, filename);
+/// println!("Binary Info:/n{:?}", binary_info);
 /// ```
-pub fn checksec_core (buffer: &[u8]) -> Vec<Result<BinResults, String>> {
+pub fn checksec(bytes: &[u8], filename: String) -> Binary {
+    Binary::new(PathBuf::from(filename), get_blob_from_buf(bytes))
+}
+
+/// Parses a binary buffer and performs security analysis based on the detected format.
+///
+/// Supports ELF, PE, and Mach-O binaries (both 32-bit and 64-bit). Returns multiple
+/// `Blob` objects for fat Mach-O binaries, single `Blob` for other formats.
+/// Errors are returned as `Blob` objects with `BinType::Error`.
+///
+/// # Arguments
+/// * `buffer` - Raw binary data to analyze
+///
+/// # Returns
+/// `Vec<Blob>` containing security analysis results or error information
+///
+/// # Example
+/// ```rust
+/// use std::fs;
+/// use checksec::get_blob_from_buf;
+///
+/// let buffer = fs::read("tests/binaries/elf/all").expect("Failed to read binary");
+/// let blobs = get_blob_from_buf(&buffer);
+/// println!("Binary Info:/n{:?}", blobs[0]);
+/// ```
+pub fn get_blob_from_buf (buffer: &[u8]) -> Vec<Blob> {
     match Object::parse(buffer){
         Ok(Object::Elf(elf)) => {
             let result = elf::CheckSecResults::parse(&elf, buffer);
-            vec![Ok(BinResults::Elf(result))]
+            let bin_type =
+                if elf.is_64 { BinType::Elf64 } else { BinType::Elf32 };
+            vec![Blob::new(bin_type, BinSpecificProperties::Elf(result))]
         },
         Ok(Object::PE(pe)) => {
             let result = pe::CheckSecResults::parse(&pe, buffer);
-            vec![Ok(BinResults::Pe(result))]
+            let bin_type =
+                if pe.is_64 { BinType::PE64 } else { BinType::PE32 };
+            vec![Blob::new(bin_type, BinSpecificProperties::PE(result))]
         },
         Ok(Object::Mach(mach)) => match mach {
             Mach::Binary(mach) => {
                 let result = macho::CheckSecResults::parse(&mach); 
-                vec![Ok(BinResults::Macho(result))]
+                let bin_type =
+                    if mach.is_64 { BinType::MachO64 } else { BinType::MachO32 };
+                vec![Blob::new(bin_type, BinSpecificProperties::MachO(result))]
             }
             Mach::Fat(mach) => process_fat_mach(mach, buffer)
         },
         Ok(Object::Unknown(magic_num)) => {
-            vec![Err(format!("Unknown magic number: {}", magic_num))]
+            vec![Blob::new(BinType::Error, BinSpecificProperties::Error(format!("Unknown magic number: {}", magic_num)))]
         }
-        Err(res) => vec![Err(res.to_string())],
-        _ => vec![Err("unsupported file type".to_string())]
+        Err(res) => vec![Blob::new(BinType::Error, BinSpecificProperties::Error(res.to_string()))],
+        _ => vec![Blob::new(BinType::Error, BinSpecificProperties::Error("unsupported file type".to_string()))]
     }
 }
 
-fn process_fat_mach(fatmach: MultiArch, bytes: &[u8]) -> Vec<Result<BinResults, String>> {
-    let mut results_vec: Vec<Result<BinResults, String>> = Vec::new();
+// Parse out the individual binaries/artifacts contained in a multi-architectural binary.
+fn process_fat_mach(fatmach: MultiArch, bytes: &[u8]) -> Vec<Blob> {
+    let mut blob_vec: Vec<Blob> = Vec::new();
     for (idx, fatarch) in fatmach.iter_arches().enumerate() {
         if let Ok(container) = fatmach.get(idx) {
             match container {
                 MachO(mach) => { 
                     let result = macho::CheckSecResults::parse(&mach);
-                    results_vec.push(Ok(BinResults::Macho(result)));
+                    let bin_type =
+                        if mach.is_64 { BinType::MachO64 } else { BinType::MachO32 };
+                    blob_vec.push(Blob::new(bin_type, BinSpecificProperties::MachO(result)));
                 }
                 Archive(archive) => {
                     match fatarch {
@@ -165,32 +146,33 @@ fn process_fat_mach(fatmach: MultiArch, bytes: &[u8]) -> Vec<Result<BinResults, 
                                 ..(fatarch.offset + fatarch.size)
                                 as usize,
                             ) {
-                                results_vec.append(&mut parse_archive(
+                                blob_vec.extend(parse_archive(
                                     &archive,
                                     archive_bytes
                                 ));
                             } else {
-                                results_vec.push(Err("Archive refers to invalid position".to_string()));
+                                blob_vec.push(Blob::new(BinType::Error, BinSpecificProperties::Error("Archive refers to invalid position".to_string())));
                             }
                         },
-                        _ => results_vec.push(Err("fatarch enumeration failed".to_string()))
+                        _ => blob_vec.push(Blob::new(BinType::Error, BinSpecificProperties::Error("fatarch enumeration failed".to_string())))
                     }
                 }
             }
         }
     }
-    results_vec
+    blob_vec
 }
 
+// Parse out binaries contained in an archive/static library.
 fn parse_archive(
     archive: &goblin::archive::Archive,
     bytes: &[u8],
-) -> Vec<Result<BinResults, String>> {
+) -> Vec<Blob> {
     archive
         .members()
         .iter()
         .filter_map(|member_name| match archive.extract(member_name, bytes) {
-            Ok(ext_bytes) => Some(checksec_core(ext_bytes)),
+            Ok(ext_bytes) => Some(get_blob_from_buf(ext_bytes)),
             Err(_) => None
         })
         .flatten()

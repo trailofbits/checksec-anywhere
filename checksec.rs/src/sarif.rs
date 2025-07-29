@@ -1,46 +1,68 @@
 //! Convert checksec report to sarif
-use crate::{BinResults, macho, elf, pe, shared::{Rpath, VecRpath}};
+use crate::{macho, elf, pe, shared::{Rpath, VecRpath}, binary::{Binary, BinSpecificProperties}};
 use serde_sarif::sarif;
+use std::path::PathBuf;
 use serde_json;
-
 const SARIF_VERSION: &str = "2.1.0";
 
 /// Converts a binary analysis result into a SARIF JSON report.
 ///
 /// # Arguments
 ///
-/// * `result` - A reference to a `BinResults` enum containing the analyzed binary data.
+/// * `results` - A reference to a vector of `Binary` structs. Each containing filename, blob information (individual reports), and libraries.
 ///
 /// # Returns
 ///
 /// Returns a `serde_json::Result<String>` containing the formatted SARIF JSON string on success.
-///
-/// # Errors
-///
-/// This function may return a serialization error (`serde_json::Error`) if
-/// generating the SARIF JSON string fails.
-pub fn get_sarif_report(result: &BinResults) -> serde_json::Result<String> {
-    match result {
-        BinResults::Elf(elf) => build_sarif_for_checksec(create_elf_results(elf)),
-        BinResults::Pe(pe) => build_sarif_for_checksec(create_pe_results(pe)),
-        BinResults::Macho(macho) => build_sarif_for_checksec(create_macho_results(macho)),
-    }
+pub fn get_sarif_report(results: &Vec<Binary>) -> serde_json::Result<String> {
+    let tool = get_tool_spec();
+    let sarif_runs: Vec<sarif::Run> = results
+        .iter()
+        .map(|result| {
+            let results: Vec<sarif::Result> = result
+                .blobs
+                .iter()
+                .map(|blob| match &blob.properties {
+                    BinSpecificProperties::Elf(elf) => create_elf_results(elf),
+                    BinSpecificProperties::PE(pe) => create_pe_results(pe),
+                    BinSpecificProperties::MachO(macho) => create_macho_results(macho),
+                    _ => unreachable!(
+                        "Sarif reports should only be generated for non-error reports."
+                    ),
+                })
+                .flatten()
+                .collect();
+            sarif::Run::builder()
+                .tool(tool.clone())
+                .artifacts(vec![get_file_artifact(&result.file)])
+                .results(results)
+                .build()
+        })
+        .collect();
+    build_sarif_for_checksec(sarif_runs)
 }
 
-fn build_sarif_for_checksec(results: Vec<sarif::Result>) -> serde_json::Result<String> {
-    let tool = sarif::Tool::builder()
-        .driver(sarif::ToolComponent::builder()
-            .name("checksec-anywhere")
-            .build())
-        .build();
+// create a sarif Artifact with the name of the file included
+fn get_file_artifact(filename: &PathBuf) -> sarif::Artifact{
+    sarif::Artifact::builder()
+    .location(
+        sarif::ArtifactLocation::builder().uri(
+            filename.to_string_lossy().to_string()
+        ).build()
+    ).build()
+}
 
-    let runs = vec![
-        sarif::Run::builder()
-            .tool(tool)
-            .results(results)
-            .build()
-    ];
+// Perform initial setup of the sarif Tool type
+fn get_tool_spec() -> sarif::Tool {
+    sarif::Tool::builder()
+    .driver(sarif::ToolComponent::builder()
+        .name("checksec-anywhere")
+        .build())
+    .build()
+}
 
+// Wrap a vector of runs into a full sarif report and convert it to json
+fn build_sarif_for_checksec(runs: Vec<sarif::Run>) -> serde_json::Result<String> {
     let sarif = sarif::Sarif::builder()
         .schema(sarif::SCHEMA_URL)
         .runs(runs)
@@ -50,6 +72,7 @@ fn build_sarif_for_checksec(results: Vec<sarif::Result>) -> serde_json::Result<S
     Ok(json)
 }
 
+// Convert checksec results for an elf file into a vector of results
 #[allow(clippy::too_many_lines)]
 fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
     vec![
@@ -205,6 +228,7 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
     ]
 }
 
+// Convert checksec results for a PE file into a vector of results
 #[allow(clippy::too_many_lines)]
 fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
     vec![
@@ -372,6 +396,7 @@ fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
     ]
 }
 
+// Convert checksec results for a mach-o file into a vector of results
 #[allow(clippy::too_many_lines)]
 fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Result> {
     vec![
@@ -386,6 +411,13 @@ fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Res
                 else{
                     sarif::ResultLevel::Warning
                 })
+            .build(),
+            sarif::Result::builder()
+            .rule_id("architecture".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Target Architecture: {}", macho_result.architecture))
+                .build())
+            .level(sarif::ResultLevel::Note)
             .build(),
             sarif::Result::builder()
             .rule_id("canary".to_string())
@@ -495,6 +527,7 @@ fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Res
     ]
 }
 
+// Check if the elements in an rpath/runpath are nontrivial and should be given warning.
 fn check_rpath(paths: &VecRpath) -> sarif::ResultLevel {
     if paths.is_empty(){
         return sarif::ResultLevel::None;

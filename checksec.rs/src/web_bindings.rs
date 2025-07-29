@@ -1,15 +1,13 @@
+//! Define web bindings so the `checksec` library can interact with JavaScript functionality.
 use wasm_bindgen::prelude::*;
 use serde_derive::{Deserialize, Serialize};
-use crate::{BinResults, VERSION, checksec_core, sarif, compression::{compress, decompress}};
+use crate::{VERSION, checksec, sarif, compression::{compress, decompress}, binary::Binary};
 
-// Hold actual checksec results along with other relevant metadata. 
-// Future-proofing this means we need to be able to modify this struct and BinResults
+// Hold checksec results along with other web-related metadata.
 #[derive(Serialize, Deserialize)]
 pub struct CheckSecJs{
     version: String,
-    filename: String,
-    report: Option<BinResults>,
-    error: Option<String>
+    report: Binary
 }
 
 /// Performs the core checksec functionality on the given binary data.
@@ -24,37 +22,17 @@ pub struct CheckSecJs{
 /// Returns a `Result` containing:
 /// - `Ok(JsValue)` wrapping a `CheckSecJs` struct with:
 ///   - version info
-///   - filename
 ///   - checksec analysis data
 /// - `Err(JsValue)` wrapping error information if the analysis fails.
 ///
 /// # Errors
 ///
-/// Returns an error if the underlying `checksec_core` function fails to process the file.
+/// Returns an error if the underlying `checksec` function fails to process the file.
 /// The error is serialized to a `JsValue` suitable for consumption in the WebAssembly context.
 #[wasm_bindgen]
-pub fn checksec (buffer: &[u8], filename: String) -> Result<JsValue, JsValue> {
-    let result_vec: Vec<CheckSecJs> = checksec_core(buffer)
-    .into_iter().map(|result| match result{
-        Ok(report) => {
-            CheckSecJs{
-                version: VERSION.into(),
-                filename: filename.clone(),
-                report: Some(report),
-                error: None
-            }
-        },
-        Err(errstring) => {
-            CheckSecJs{
-                version: VERSION.into(),
-                filename: filename.clone(),
-                report: None,
-                error: Some(errstring)
-            }
-        }
-    })
-    .collect();
-     Ok(serde_wasm_bindgen::to_value(&result_vec)?)
+pub fn checksec_web (buffer: &[u8], filename: String) -> Result<JsValue, JsValue> {
+    let report = CheckSecJs{version: VERSION.into(), report: checksec(buffer, filename)};
+     Ok(serde_wasm_bindgen::to_value(&report)?)
 } 
 
 /// Compresses and encodes a serialized `CheckSecJs` structure.
@@ -92,8 +70,7 @@ pub fn checksec_compress(js_representation: JsValue) -> Result<JsValue, JsValue>
 ///
 /// # Arguments
 ///
-/// * `buffer` - A byte slice representing the compressed checksec information,
-///   typically retrieved from a URL or other binary source.
+/// * `buffer` - A byte slice representing compressed checksec information.
 ///
 /// # Returns
 ///
@@ -119,7 +96,7 @@ pub fn checksec_decompress(buffer: &[u8]) -> Result<JsValue, JsValue> {
 ///
 /// # Arguments
 ///
-/// * `js_representation` - A `JsValue` representing a serialized `CheckSecJs` structure from JavaScript.
+/// * `js_representation` - A `JsValue` representing a serialized `Vec<Binary>` structure from JavaScript.
 ///
 /// # Returns
 ///
@@ -135,14 +112,11 @@ pub fn checksec_decompress(buffer: &[u8]) -> Result<JsValue, JsValue> {
 /// - Serialization of the SARIF report string into a `JsValue` fails.
 #[wasm_bindgen]
 pub fn generate_sarif_report(js_representation: JsValue) -> Result<JsValue, JsValue> {
-    let report: CheckSecJs = serde_wasm_bindgen::from_value(js_representation)
+    let reports: Vec<Binary> = serde_wasm_bindgen::from_value(js_representation)
         .map_err(|_| JsValue::from_str("Error converting JS value to Rust struct"))?;
-    if let Some(report_results) = &report.report{
-        return match sarif::get_sarif_report(report_results) {
-            Ok(report_string) => Ok(serde_wasm_bindgen::to_value(&report_string)?),
-            Err(err) => Err(serde_wasm_bindgen::to_value(&err.to_string())?),
-        }
+    match sarif::get_sarif_report(&reports) {
+        Ok(report_string) => Ok(serde_wasm_bindgen::to_value(&report_string)?),
+        Err(err) => Err(serde_wasm_bindgen::to_value(&err.to_string())?),
     }
-    Err(serde_wasm_bindgen::to_value("Report property empty")?)
 }
     

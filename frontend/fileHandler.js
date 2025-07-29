@@ -1,4 +1,4 @@
-import { checksec } from './pkg/checksec.js';
+import { checksec_web } from './pkg/checksec.js';
 import { displayResults } from './display.js';
 import { showError, hideError } from './utils.js';
 import { getIsViewingSharedReport, setIsViewingSharedReport } from './share.js';
@@ -43,6 +43,7 @@ export async function handleFileInput(files) {
     const batchStartTime = performance.now();
     try {
         const reports = [];
+        let results = [];
         const totalFiles = files.length;
         totalFilesSpan.textContent = totalFiles;
         
@@ -53,24 +54,15 @@ export async function handleFileInput(files) {
             const buffer = await file.arrayBuffer();
             const uint8Array = new Uint8Array(buffer);
             try{
-                // Run checksec analysis
-                const results = await checksec(uint8Array, file.name);
-                results.forEach((result, index) => {
-                    if (result.report !== null && result.report !== undefined) {
-                        reports.push({ result, success: true });
-                    }
-                    else{
-                        reports.push({ result: { error: result.error || "Failed to analyze binary", filename: result.filename}, success: false }); //Goblin-related error
-                    }
-                })
+                results.push(await checksec_web(uint8Array, file.name));
             }
             catch (err) {
-                reports.push({ result: { error: "Failed to analyze binary", filename: result.filename} , success: false }); //serde-wasm error
+                console.log("Error message: ", err);
+                reports.push({ result: { error: "Failed to analyze binary", filename: file.name} , success: false }); //serde-wasm error
             }
         }
-        
         batchLoading.style.display = "none";
-        displayResults(reports);
+        displayResults(results);
     } catch (err) {
         console.error("File processing error:", err);
         batchLoading.style.display = "none";

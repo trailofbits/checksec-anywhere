@@ -1,4 +1,4 @@
-import { checksec } from './pkg/checksec.js';
+import { checksec_web } from './pkg/checksec.js';
 import { displayResult } from './display.js';
 import { showError, hideError } from './utils.js';
 import { getIsViewingSharedReport, setIsViewingSharedReport } from './share.js';
@@ -58,7 +58,6 @@ async function handleUrlAnalysis() {
         
         // Run checksec analysis
         const result = await checksec(uint8Array, filename);
-        console.log("Checksec result:", result);
         
         loading.style.display = 'none';
         displayResult(result);

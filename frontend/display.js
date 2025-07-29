@@ -7,23 +7,35 @@ const tabsContainer = document.getElementById("tabsContainer");
 const tabsHeader = document.getElementById("tabsHeader");
 const tabsContent = document.getElementById("tabsContent");
 
-export function displayFileHeader(binaryType, bitness, filename, container) {
+// Global storage for tab results
+const tabResults = new Map();
+
+export function displayFileHeader(binaryType, filename, container) {
     let binary_str = "";
     switch (binaryType){
-        case "Macho":
-            binary_str = "Mach-O";
+        case "Elf32":
+            binary_str = "ELF (32 Bit)";
             break;
-        case "Elf":
-            binary_str = "ELF";
+        case "Elf64":
+            binary_str = "ELF (64 Bit)";
             break;
-        case "Pe":
-            binary_str = "PE";
+        case "PE64":
+            binary_str = "PE (64 Bit)";
+            break;
+        case "PE32":
+            binary_str = "PE (64 Bit)";
+            break;
+        case "MachO64":
+            binary_str = "Mach-O (64 Bit)";
+            break;
+        case "MachO32":
+            binary_str = "Mach-O (32 Bit)";
             break;
         default:
             binary_str = "Unknown File" // We should never hit this default case
     }
 
-    container.innerHTML = `<h2>${binary_str} (${bitness} bit) Security Analysis - ${filename}</h2>`;
+    container.innerHTML = `<h2>${binary_str} Security Analysis - ${filename}</h2>`;
     
     const fileTypeItem = document.createElement("li");
     fileTypeItem.className = "security-item";
@@ -83,7 +95,7 @@ export function displayBinaryData(binaryData, container) {
     }
 }
 
-export function displayShareFunctionality(result, container) {
+export function displayShareFunctionality(blob, filename, version, container) {
     // Generate unique IDs for this tab's buttons
     const uniqueId = Date.now() + Math.random().toString(36).substr(2, 9);
     const sarifBtnId = `downloadSarifBtn_${uniqueId}`;
@@ -111,10 +123,9 @@ export function displayShareFunctionality(result, container) {
         downloadSarifBtn.textContent = 'Generating...';
         downloadSarifBtn.disabled = true;
         try {
-            const sarifJson = await generate_sarif_report(result);
-            const filename = result.filename + "_checksec-report" || 'checksec-report';
-            const blob = new Blob([sarifJson], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
+            const sarifJson = await generate_sarif_report([{file: filename, blobs: [blob], libraries: []}]);
+            const urlblob = new Blob([sarifJson], { type: 'application/json' });
+            const url = URL.createObjectURL(urlblob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `${filename}.sarif`;
@@ -160,7 +171,7 @@ export function displayShareFunctionality(result, container) {
         shareBtn.textContent = 'Generating...';
         shareBtn.disabled = true;
         try {
-            const shareableUrl = await generateShareableURL(result);
+            const shareableUrl = await generateShareableURL({version, report: {file: filename, blobs: [blob], libraries: []}});
             shareUrlDiv.textContent = shareableUrl;
             shareUrlDiv.style.display = 'block';
             shareBtn.style.display = 'none';
@@ -259,8 +270,10 @@ function closeTab(tabButton, tabContent) {
     const isActive = tabButton.classList.contains('active');
     const allTabs = tabsHeader.querySelectorAll('.tab-button');
     
-    let closedIndex = tabButton.dataset.tabIndex == 0 ? 1 : tabButton.dataset.tabIndex;
+    const tabIndex = tabButton.dataset.tabIndex;
+    let closedIndex = tabIndex == 0 ? 1 : tabIndex
 
+    tabResults.delete(tabIndex);
     
     // Remove the tab and content
     tabButton.remove();
@@ -272,6 +285,7 @@ function closeTab(tabButton, tabContent) {
     // If no tabs left, hide the tabs container
     if (tabsHeader.children.length === 0) {
         tabsContainer.style.display = 'none';
+        tabResults.clear();
     } else {
         const remainingTabs = tabsHeader.querySelectorAll('.tab-button');
         const remainingContents = tabsContent.querySelectorAll('.tab-content');
@@ -294,6 +308,7 @@ function closeTab(tabButton, tabContent) {
             scrollToActiveTab();
         }
     }
+    updateCombinedSarifButton();
 }
 
 function updateTabIndices() {
@@ -336,28 +351,23 @@ function scrollToActiveTab() {
     }
 }
 
-export function displayResultV1(result, container) {
+export function displayResultV1(filename, blob, container) {
+    const VERSION = '0.1.0';
     container.innerHTML = "";
-    const [binaryType, binaryData] = Object.entries(result.report)[0];
+    const [bt, binaryData] = Object.entries(blob.properties)[0];
     
-    displayFileHeader(binaryType, binaryData.bitness, result.filename, container);
-    displayFileRow(result.filename, container);
+    displayFileHeader(blob.binarytype, filename, container);
+    displayFileRow(filename, container);
     displayBinaryData(binaryData, container);
-    displayShareFunctionality(result, container);
+    displayShareFunctionality(blob, filename, VERSION, container);
 }
 
 export function displayResult(entry) {
-    const filename = entry.result.filename // use filename reported in shared url
 
-    let container = setupResultTab(filename);
-
-    if (!entry.success) {
-        display_error_handler(filename, entry.result.error, container);
-        return;
-    }
+    const filename = entry.report.file // use filename reported in shared url
 
     let display_result_handler = null;
-    switch (entry.result.version) {
+    switch (entry.version) {
         case '0.1.0':
             display_result_handler = displayResultV1
             break;
@@ -366,11 +376,20 @@ export function displayResult(entry) {
             display_result_handler = displayResultV1;
     }
 
-    display_result_handler(entry.result, container);
+    entry.report.blobs.forEach((blob, index) => {
+        let container = setupResultTab(filename);
+        if (blob.binarytype == "Error"){
+            display_error_handler(filename, blob.properties.Error, container);
+        }
+        else{
+            const tabIndex = container.dataset.tabIndex;
+            tabResults.set(tabIndex, {filename, blob});
+            display_result_handler(filename, blob, container);
+        }
+    });
 }
 
 export function displayResults(batchResults) {
-
     batchResults.forEach(entry => {
         displayResult(entry)
     });
@@ -406,4 +425,83 @@ export function displayResults(batchResults) {
 
     tabsContainer.style.display = "block";
     tabsContainer.scrollIntoView({ behavior: 'smooth' });
+    addCombinedSarifButton();
+}
+
+function addCombinedSarifButton() {
+    const allTabs = tabsHeader.querySelectorAll(".tab-button");
+    
+    // Only show combined button if there are multiple tabs
+    if (allTabs.length <= 1) {
+        return;
+    }
+    
+    // Check if combined button already exists
+    const existingButton = document.getElementById('combinedSarifBtn');
+    if (existingButton) {
+        updateCombinedButtonCount(existingButton);
+        return;
+    }
+    
+    // Count successful results only
+    const successfulResults = [];
+    tabResults.forEach((entry, tabIndex) => {
+        if (!(entry.blob.binarytype === "Error")) {
+            successfulResults.push({file: entry.filename, blobs: [entry.blob], libraries: []});
+        }
+    });
+    if (successfulResults.length === 0) {
+        return;
+    }
+    
+    // Create combined SARIF button
+    const combinedButton = document.createElement("button");
+    combinedButton.id = "combinedSarifBtn";
+    combinedButton.className = "combined-sarif-btn";
+    combinedButton.innerHTML = `
+        <span>Download Combined SARIF Report (${successfulResults.length} files)</span>
+    `;
+    
+    // Position the button above the tabs
+    tabsContainer.insertBefore(combinedButton, tabsHeader);
+    
+    // Add click handler
+    combinedButton.addEventListener('click', async () => {
+        combinedButton.disabled = true;
+        combinedButton.innerHTML = '<span>Generating combined report...</span>';
+        
+        try {
+            // Generate combined SARIF report with only successful results
+            const combinedSarif = await generate_sarif_report(successfulResults);
+            
+            // Download the combined report
+            const filename = `combined-checksec-report-${new Date().toISOString().split('T')[0]}`;
+            const blob = new Blob([combinedSarif], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filename}.sarif`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            combinedButton.innerHTML = '<span>Combined report downloaded</span>';
+        } catch (err) {
+            console.error('Failed to generate combined SARIF report:', err);
+            combinedButton.innerHTML = '<span>Error - Try Again</span>';
+        }
+    });
+}
+
+function updateCombinedButtonCount(button) {
+    const successfulResults = [];
+    tabResults.forEach((entry, tabIndex) => {
+        if (!entry.blob.binarytype === "Error") {
+            successfulResults.push({file: entry.filename, blobs: [entry.properties], libraries: []});
+        }
+    });
+    
+    button.innerHTML = `<span>Download Combined SARIF Report (${successfulResults.length} files)</span>`;
+    button.disabled = false;
 }

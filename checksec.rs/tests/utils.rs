@@ -4,8 +4,8 @@ use std::process;
 
 
 // Convert file contents to buffer of bytes
-pub fn file_to_buf(filename: String) -> Vec<u8>{
-    let path = Path::new(&filename);
+pub fn file_to_buf(filename: &String) -> Vec<u8>{
+    let path = Path::new(filename);
     if let Ok(buf) = fs::read(path){
         return buf;
     }
