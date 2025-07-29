@@ -272,8 +272,6 @@ function closeTab(tabButton, tabContent) {
     
     const tabIndex = tabButton.dataset.tabIndex;
     let closedIndex = tabIndex == 0 ? 1 : tabIndex
-    const tabIndex = tabButton.dataset.tabIndex;
-    let closedIndex = tabIndex == 0 ? 1 : tabIndex
 
     tabResults.delete(tabIndex);
     tabResults.delete(tabIndex);
