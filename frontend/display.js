@@ -272,7 +272,10 @@ function closeTab(tabButton, tabContent) {
     
     const tabIndex = tabButton.dataset.tabIndex;
     let closedIndex = tabIndex == 0 ? 1 : tabIndex
+    const tabIndex = tabButton.dataset.tabIndex;
+    let closedIndex = tabIndex == 0 ? 1 : tabIndex
 
+    tabResults.delete(tabIndex);
     tabResults.delete(tabIndex);
     
     // Remove the tab and content
@@ -285,6 +288,7 @@ function closeTab(tabButton, tabContent) {
     // If no tabs left, hide the tabs container
     if (tabsHeader.children.length === 0) {
         tabsContainer.style.display = 'none';
+        tabResults.clear();
         tabResults.clear();
     } else {
         const remainingTabs = tabsHeader.querySelectorAll('.tab-button');
@@ -308,6 +312,7 @@ function closeTab(tabButton, tabContent) {
             scrollToActiveTab();
         }
     }
+    updateCombinedSarifButton();
     updateCombinedSarifButton();
 }
 
