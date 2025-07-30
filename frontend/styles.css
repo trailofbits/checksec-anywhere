@@ -453,33 +453,55 @@ body {
     background: #21262d;
     border-color: #30363d;
     color: #8b949e;
-    cursor: not-allowed;
 }
 
 /* Footer styles */
 .footer {
-    margin-top: 4rem;
-    padding: 1rem 2rem;
-    text-align: left;
-    border-top: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    background: var(--bg-primary);
-}
-
-.footer p {
-    margin: 0;
+    margin-top: 40px;
+    padding: 20px 0;
+    text-align: center;
+    border-top: 1px solid #30363d;
+    color: #8b949e;
     font-size: 0.9rem;
 }
 
+.footer p {
+    margin: 5px 0;
+}
+
 .footer a {
-    color: #1f6feb;
+    color: #58a6ff;
     text-decoration: none;
-    transition: color 0.3s ease;
 }
 
 .footer a:hover {
-    color: #1f6feb;
     text-decoration: underline;
+}
+
+/* Disclaimer styles */
+.disclaimer {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 15px auto !important;
+    max-width: 600px;
+    font-size: 0.85rem;
+    color: #7d8590;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.disclaimer::before {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.disclaimer:hover {
+    border-color: #444c56;
+    background: #161b22;
 }
 
 /* Batch results styles */
@@ -740,4 +762,149 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+}
+
+/* Persistent batch button styles */
+.persistent-batch-btn {
+    background: #238636;
+    color: #ffffff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+    transition: all 0.2s ease;
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.persistent-batch-btn:hover {
+    background: #1f6f3a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(35, 134, 54, 0.3);
+}
+
+.persistent-batch-btn:disabled {
+    background: #444c56;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.persistent-batch-btn span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Upload type selection buttons */
+.upload-type-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    justify-content: center;
+    align-items: center;
+}
+
+.upload-type-btn {
+    background: #21262d;
+    color: #8b949e;
+    border: 1px solid #30363d;
+    padding: 16px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 120px;
+    height: 48px;
+    flex: 1;
+    max-width: 160px;
+}
+
+.upload-type-btn:hover {
+    background: #30363d;
+    color: #e6edf3;
+    border-color: #444c56;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.upload-type-btn.active {
+    background: #1f6feb;
+    color: #ffffff;
+    border-color: #1f6feb;
+}
+
+.upload-type-btn.active:hover {
+    background: #1a5bb8;
+    border-color: #1a5bb8;
+}
+
+.upload-type-btn span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+
+/* URL input styling */
+.url-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #0d1117;
+    color: #e6edf3;
+    transition: all 0.3s ease;
+}
+
+.url-input:focus {
+    outline: none;
+    border-color: #1f6feb;
+    background: #0d1117;
+    box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.1);
+}
+
+.analyze-btn {
+    background: #161b22;
+    color: #e6edf3;
+    border: 1px solid #30363d;
+    padding: 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.analyze-btn:hover {
+    background: #21262d;
+    border-color: #444c56;
+}
+
+.analyze-btn:disabled {
+    background: #21262d;
+    border-color: #30363d;
+    color: #8b949e;
+}
+
+/* Responsive adjustments for upload type buttons */
+@media (max-width: 600px) {
+    .upload-type-buttons {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .upload-type-btn {
+        justify-content: center;
+        padding: 10px 16px;
+    }
 } 

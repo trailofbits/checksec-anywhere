@@ -10,6 +10,9 @@ const currentFileSpan = document.getElementById("currentFile");
 const totalFilesSpan = document.getElementById("totalFiles");
 const resultsSection = document.getElementById("resultsSection");
 
+// Upload type state
+let currentUploadType = 'file'; // 'file', 'directory'
+
 export async function handleFiles(files) {
     // window related cleanup
     hideError();
@@ -73,8 +76,73 @@ export async function handleFileInput(files) {
     console.log(`BATCH TIME: ${totalBatchTime}`);
 }
 
+function updateFileInputAttributes() {
+    // Remove all existing attributes
+    fileInput.removeAttribute('multiple');
+    fileInput.removeAttribute('webkitdirectory');
+    fileInput.removeAttribute('directory');
+    
+    // Set attributes based on current upload type
+    switch (currentUploadType) {
+        case 'file':
+            fileInput.setAttribute('multiple', '');
+            break;
+        case 'directory':
+            fileInput.setAttribute('webkitdirectory', '');
+            fileInput.setAttribute('directory', '');
+            break;
+    }
+}
+
+function updateUploadTypeButtons() {
+    // Remove active class from all buttons
+    document.querySelectorAll('.upload-type-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Add active class to current type button
+    const activeButton = document.querySelector(`[data-upload-type="${currentUploadType}"]`);
+    if (activeButton) {
+        activeButton.classList.add('active');
+    }
+}
+
+function createUploadTypeButtons() {
+    // Create button container if it doesn't exist
+    let buttonContainer = document.querySelector('.upload-type-buttons');
+    if (!buttonContainer) {
+        buttonContainer = document.createElement('div');
+        buttonContainer.className = 'upload-type-buttons';
+        fileInputWrapper.insertBefore(buttonContainer, fileInputWrapper.firstChild);
+    }
+    
+    buttonContainer.innerHTML = `
+        <button class="upload-type-btn active" data-upload-type="file">
+            <span>File(s)</span>
+        </button>
+        <button class="upload-type-btn" data-upload-type="directory">
+            <span>Directory</span>
+        </button>
+    `;
+    
+    // Add click handlers
+    buttonContainer.querySelectorAll('.upload-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentUploadType = btn.dataset.uploadType;
+            updateFileInputAttributes();
+            updateUploadTypeButtons();
+        });
+    });
+}
+
 export function setupFileInputListeners() {
-    // Unified file upload handling
+    // Create upload type selection buttons
+    createUploadTypeButtons();
+    
+    // Set initial file input attributes
+    updateFileInputAttributes();
+    
+    // File upload handling
     fileInputWrapper.addEventListener('dragover', (e) => {
         e.preventDefault();
         fileInputWrapper.classList.add('dragover');

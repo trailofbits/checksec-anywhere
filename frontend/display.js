@@ -462,7 +462,7 @@ function addCombinedSarifButton() {
     combinedButton.id = "combinedSarifBtn";
     combinedButton.className = "combined-sarif-btn";
     combinedButton.innerHTML = `
-        <span>Download Combined SARIF Report (${successfulResults.length} files)</span>
+        <span>Download Combined SARIF Report (${successfulResults.length} files successfully processed)</span>
     `;
     
     // Position the button above the tabs
@@ -500,8 +500,8 @@ function addCombinedSarifButton() {
 function updateCombinedButtonCount(button) {
     const successfulResults = [];
     tabResults.forEach((entry, tabIndex) => {
-        if (!entry.blob.binarytype === "Error") {
-            successfulResults.push({file: entry.filename, blobs: [entry.properties], libraries: []});
+        if (!(entry.blob.binarytype === "Error")) {
+            successfulResults.push({file: entry.filename, blobs: [entry.blob], libraries: []});
         }
     });
     

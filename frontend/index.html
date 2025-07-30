@@ -14,9 +14,9 @@
         
         <div class="input-section">
             <div class="input-container">
+                <!-- Unified file upload -->
                 <div id="fileInputWrapper" class="input-box">
-                    <input type="file" id="fileInput" accept="*/*" style="display: none;" multiple>
-                    <p>Drop files or click to browse</p>
+                    <input type="file" id="fileInput" accept="*/*" multiple webkitdirectory directory style="display: none;">
                 </div>
                 
                 <div class="input-divider">
@@ -42,17 +42,23 @@
 
         <div id="error" class="error" style="display: none;"></div>
 
-        <!-- Tabbed results -->
+        <!-- Tabbed results interface -->
         <div id="tabsContainer" class="tabs-container" style="display: none;">
             <div id="tabsHeader" class="tabs-header"></div>
             <div id="tabsContent" class="tabs-content"></div>
         </div>
+
+        <!-- Single file results (for backward compatibility) -->
+        <div id="resultsSection" class="results-section" style="display: none;">
+            <h2 id="resultsTitle">Security Analysis Results</h2>
+            <ul id="output" class="security-list"></ul>
+        </div>
     </div>
 
     <footer class="footer">
+    <p class="disclaimer">All file processing happens in your browser, we never see, store, or transmit files.</p>
     <p>Check out the <a href="https://github.com/trailofbits/checksec-anywhere" target="_blank" rel="noopener noreferrer">source code</a>!</p>
     </footer>
-
     <script type="module" src="app.js"></script>
 </body>
 </html>
