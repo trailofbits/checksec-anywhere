@@ -23,7 +23,7 @@ export function displayFileHeader(binaryType, filename, container) {
             binary_str = "PE (64 Bit)";
             break;
         case "PE32":
-            binary_str = "PE (64 Bit)";
+            binary_str = "PE (32 Bit)";
             break;
         case "MachO64":
             binary_str = "Mach-O (64 Bit)";
@@ -35,11 +35,11 @@ export function displayFileHeader(binaryType, filename, container) {
             binary_str = "Unknown File" // We should never hit this default case
     }
 
-    container = document.createElement("h2")
-    container.innerHTML = `
-    <h2 class=report_header></h2>
-    `;
-    container.querySelector(".report_header").textContent = "${binary_str} Security Analysis - ${filename}";
+    // Create the header element
+    const headerElement = document.createElement("h2");
+    headerElement.className = "report_header";
+    headerElement.textContent = `${binary_str} Security Analysis - ${filename}`;
+    container.appendChild(headerElement);
     
     const fileTypeItem = document.createElement("li");
     fileTypeItem.className = "security-item";
