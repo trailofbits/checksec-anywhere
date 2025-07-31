@@ -224,6 +224,8 @@ pub struct CheckSecResults {
     pub symbol_count: usize,
     // bitness info
     pub bitness: u64,
+    // contains asan instrumentation
+    pub asan: bool,
 }
 impl CheckSecResults {
     #[must_use]
@@ -256,6 +258,7 @@ impl CheckSecResults {
                 .collect(),
             symbol_count: elf.symbol_count(),
             bitness: if elf.is_64 { 64 } else { 32 },
+            asan: elf.has_asan(),
         }
     }
 }
@@ -267,7 +270,7 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "Canary: {} CFI: {} SafeStack: {} StackClash: {} Fortify: {} Fortified: {:2} \
-            Fortifiable: {:2} NX: {} PIE: {} Relro: {} RPATH: {} RUNPATH: {} Symbols: {}",
+            Fortifiable: {:2} NX: {} PIE: {} Relro: {} RPATH: {} RUNPATH: {} Symbols: {} Asan: {}",
             self.canary,
             self.clang_cfi,
             self.clang_safestack,
@@ -280,7 +283,8 @@ impl fmt::Display for CheckSecResults {
             self.relro,
             self.rpath,
             self.runpath,
-            self.symbols
+            self.symbols,
+            self.asan,
         )
     }
     #[cfg(feature = "color")]
@@ -288,7 +292,7 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
+            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
             "Canary:".bold(),
             colorize_bool!(self.canary),
             "CFI:".bold(),
@@ -314,7 +318,9 @@ impl fmt::Display for CheckSecResults {
             "RUNPATH:".bold(),
             self.runpath,
             "Symbols".bold(),
-            self.symbol_count
+            self.symbol_count,
+            "Asan".bold(),
+            colorize_bool!(!self.asan),
         )
     }
 }
@@ -367,6 +373,8 @@ pub trait Properties {
     fn get_dynstr_by_tag(&self, tag: u64) -> Option<&str>;
     // return the total number of symbols in the binary
     fn symbol_count(&self) -> usize;
+    // return if the binary contains asan symbols (i.e., contains asan instrumentation)
+    fn has_asan(&self) -> bool;
 }
 
 // readelf -s -W /lib/x86_64-linux-gnu/libc.so.6 | grep _chk
@@ -564,18 +572,6 @@ impl Properties for Elf<'_> {
         }
         (fortified_count, fortifiable_count+fortified_count)
     }
-    /*
-    // requires running platform to be Linux
-    fn has_fortifiable(&self) -> Vec<String> {
-        self.dynsyms
-            .iter()
-            .filter(goblin::elf::Sym::is_function)
-            .filter_map(|sym| self.dynstrtab.get_at(sym.st_name))
-            .filter(|func| FORTIFIABLE_FUNCTIONS.binary_search(func).is_ok())
-            .map(std::string::ToString::to_string)
-            .collect()
-    }
-    */
     fn has_nx(&self) -> Nx {
         if self.program_headers.is_empty(){
             return Nx::Na;
@@ -660,6 +656,13 @@ impl Properties for Elf<'_> {
             }
         }
         None
+    }
+    fn has_asan(&self) -> bool {
+        // __asan_init prologue added to functions :https://codebrowser.dev/llvm/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp.html#3012
+        self.dynsyms.iter().any(|dynsym| match self.dynstrtab.get_at(dynsym.st_name){
+            Some(sym_name) => {sym_name == "__asan_init"},
+            _ => false
+        })
     }
 }
 

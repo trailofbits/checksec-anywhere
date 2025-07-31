@@ -347,6 +347,8 @@ pub struct CheckSecResults {
     pub bitness: u64,
     // symbol count
     pub symbol_count: usize,
+    // has asan instrumentation
+    pub asan: bool,
 }
 impl CheckSecResults {
     #[must_use]
@@ -366,6 +368,7 @@ impl CheckSecResults {
             cet: pe.is_cet_compat(),
             bitness: if pe.is_64 { 64 } else { 32 },
             symbol_count: pe.symbol_count(),
+            asan: pe.has_asan(),
         }
     }
 }
@@ -376,7 +379,7 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "ASLR: {} Authenticode: {} CFG: {} .NET: {} NX: {} \
-            Force Integrity: {} GS: {} Isolation: {} RFG: {} SafeSEH: {} SEH: {} Symbol Count: {}",
+            Force Integrity: {} GS: {} Isolation: {} RFG: {} SafeSEH: {} SEH: {} Symbol Count: {} Asan: {}",
             self.aslr,
             self.authenticode,
             self.cfg,
@@ -388,7 +391,8 @@ impl fmt::Display for CheckSecResults {
             self.rfg,
             self.safeseh,
             self.seh,
-            self.symbol_count
+            self.symbol_count,
+            self.asan
         )
     }
     #[cfg(feature = "color")]
@@ -397,7 +401,7 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "{} {} {} {} {} {} {} {} {} {} {} {} {} {} \
-             {} {} {} {} {} {} {} {} {} {}",
+             {} {} {} {} {} {} {} {} {} {} {} {}",
             "ASLR:".bold(),
             self.aslr,
             "Authenticode:".bold(),
@@ -421,7 +425,9 @@ impl fmt::Display for CheckSecResults {
             "SEH:".bold(),
             colorize_bool!(self.seh),
             "Symbols".bold(),
-            self.symbol_count
+            self.symbol_count,
+            "Asan".bold(),
+            colorize_bool!(!self.asan),
         )
     }
 }
@@ -523,6 +529,8 @@ pub trait Properties {
     fn is_cet_compat(&self) -> bool;
     // get the number of symbols in the binary
     fn symbol_count(&self) -> usize;
+    // return if the binary has asan symbols
+    fn has_asan(&self) -> bool;
 }
 impl Properties for PE<'_> {
     fn has_aslr(&self) -> ASLR {
@@ -743,5 +751,11 @@ impl Properties for PE<'_> {
     }
     fn symbol_count(&self) -> usize {
         self.exports.len()
+    }
+    fn has_asan(&self) -> bool {
+        self.exports.iter().any(|sym| match sym.name{
+            Some(name) => name == "__asan_init",
+            _ => false,
+        })
     }
 }

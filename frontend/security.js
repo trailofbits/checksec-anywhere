@@ -53,7 +53,10 @@ export function getPathClass(value) {
     return value.paths.length > 0 ? 'insecure' : 'secure';
 }
 
-export function getBooleanClass(value) {
+export function getBooleanClass(key, value) {
+    if (key === 'asan'){
+        return value ? 'insecure': 'secure';
+    }
     return value ? 'secure' : 'insecure';
 }
 
@@ -61,7 +64,7 @@ export function getBooleanClass(value) {
 export function getSecurityClass(key, value) {
     // Handle different value types and security features
     if (typeof value === 'boolean') {
-        return getBooleanClass(value);
+        return getBooleanClass(key, value);
     }
 
     // Security feature specific handlers
@@ -149,7 +152,8 @@ export function formatSecurityName(key) {
         'restrict': 'Restrict Segment',
         'nx_heap': 'NX Heap',
         'nx_stack': 'NX Stack',
-        'architecture': 'Architecture'
+        'architecture': 'Architecture',
+        'asan': 'Address Sanitizer'
     };
     
     return nameMap[key];

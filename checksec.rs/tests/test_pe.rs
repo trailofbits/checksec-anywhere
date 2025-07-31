@@ -213,3 +213,5 @@ fn test_not_cet_compat(){
         _ => {panic!("Checksec failed")},
     }
 }
+
+// TODO: Find .exe with asan instrumentation

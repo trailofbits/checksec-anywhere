@@ -143,7 +143,7 @@ fn test_no_symbols(){
     let filename = "./tests/binaries/elf/all".into();
     let buf = file_to_buf(&filename);
     match &checksec(&buf, filename).blobs[0].properties {
-        BinSpecificProperties::Elf(elf_result) => {assert_eq!(*elf_result.symbol_count, 0)},
+        BinSpecificProperties::Elf(elf_result) => {assert_eq!(elf_result.symbol_count, 0)},
         _ => {panic!("Checksec failed")},
     }
 }
@@ -153,7 +153,7 @@ fn test_symbol_count(){
     let filename = "./tests/binaries/elf/sstack".into();
     let buf = file_to_buf(&filename);
     match &checksec(&buf, filename).blobs[0].properties {
-        BinSpecificProperties::Elf(elf_result) => {assert_eq!(*elf_result.symbol_count, 87)},
+        BinSpecificProperties::Elf(elf_result) => {assert_eq!(elf_result.symbol_count, 87)},
         _ => {panic!("Checksec failed")},
     }
 }
@@ -311,5 +311,25 @@ fn test_runpath_none(){
             assert_eq!(elf_result.runpath[0], runpath_val);
         },
         _ =>  {panic!("Checksec failed")},
+    }
+}
+
+#[test]
+fn test_asan_exists(){
+    let filename = "./tests/binaries/elf/asan_enabled".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::Elf(elf_result) => {assert_eq!(elf_result.asan, true)},
+        _ => {panic!("Checksec failed")},
+    }
+}
+
+#[test]
+fn test_asan_absent(){
+    let filename = "./tests/binaries/elf/all".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::Elf(elf_result) => {assert_eq!(elf_result.asan, false)},
+        _ => {panic!("Checksec failed")},
     }
 }

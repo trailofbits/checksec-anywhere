@@ -227,3 +227,31 @@ fn test_multiarch_extract(){
     let blobs = &checksec(&buf, filename).blobs;
     assert_eq!(blobs.len(), 2);
 }
+#[test]
+fn test_has_asan(){
+    let filename = "./tests/binaries/Mach-O/asan_enabled".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::MachO(macho_result) => {assert_eq!(macho_result.asan, true)},
+        _ => {panic!("Checksec failed")},
+    }
+}
+#[test]
+fn test_asan_not_enabled(){
+    let filename = "./tests/binaries/Mach-O/rel_cl.o".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::MachO(macho_result) => {assert_eq!(macho_result.asan, false)},
+        _ => {panic!("Checksec failed")},
+    }
+}
+
+#[test]
+fn test_symbol_count(){
+    let filename = "./tests/binaries/Mach-O/no_canary".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::MachO(macho_result) => {assert_eq!(macho_result.symbol_count, 5)},
+        _ => {panic!("Checksec failed")},
+    }
+}

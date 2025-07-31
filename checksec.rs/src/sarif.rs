@@ -211,12 +211,7 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
             .message(sarif::Message::builder()
                 .text(format!("Symbol count: {}", elf_result.symbol_count.to_string().trim_end()))
                 .build())
-            .level(if elf_result.symbol_count == 0 {
-                    sarif::ResultLevel::None
-                }
-                else{
-                    sarif::ResultLevel::Warning
-                })
+            .level(sarif::ResultLevel::Note)
             .build(),
             sarif::Result::builder()
             .rule_id("bitness".to_string())
@@ -224,6 +219,16 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
                 .text(format!("Bitness: {}", elf_result.bitness))
                 .build())
             .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("asan".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Address Sanitizer Instrumentation: {}", elf_result.asan))
+                .build())
+            .level(match elf_result.asan { 
+                false => sarif::ResultLevel::None, 
+                true => sarif::ResultLevel::Warning 
+            })
             .build(),
     ]
 }
@@ -393,6 +398,23 @@ fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
             .build())
             .level(sarif::ResultLevel::Note)
             .build(),
+            sarif::Result::builder()
+            .rule_id("asan".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Address Sanitizer Instrumentation: {}", pe_result.asan))
+                .build())
+            .level(match pe_result.asan { 
+                false => sarif::ResultLevel::None, 
+                true => sarif::ResultLevel::Warning 
+            })
+            .build(),
+            sarif::Result::builder()
+            .rule_id("symbols".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Symbol count: {}", pe_result.symbol_count.to_string().trim_end()))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
     ]
 }
 
@@ -521,6 +543,23 @@ fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Res
             .rule_id("bitness".to_string())
             .message(sarif::Message::builder()
                 .text(format!("Bitness: {}", macho_result.bitness))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("asan".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Address Sanitizer Instrumentation: {}", macho_result.asan))
+                .build())
+            .level(match macho_result.asan { 
+                false => sarif::ResultLevel::None, 
+                true => sarif::ResultLevel::Warning 
+            })
+            .build(),
+            sarif::Result::builder()
+            .rule_id("symbols".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Symbol count: {}", macho_result.symbol_count.to_string().trim_end()))
                 .build())
             .level(sarif::ResultLevel::Note)
             .build(),
