@@ -35,7 +35,11 @@ export function displayFileHeader(binaryType, filename, container) {
             binary_str = "Unknown File" // We should never hit this default case
     }
 
-    container.innerHTML = `<h2>${binary_str} Security Analysis - ${filename}</h2>`;
+    container = document.createElement("h2")
+    container.innerHTML = `
+    <h2 class=report_header></h2>
+    `;
+    container.querySelector(".report_header").textContent = "${binary_str} Security Analysis - ${filename}";
     
     const fileTypeItem = document.createElement("li");
     fileTypeItem.className = "security-item";
@@ -55,9 +59,10 @@ export function displayFileRow(filename, container) {
     filenameItem.innerHTML = `
         <div class="security-item-main">
             <span class="security-name">Filename</span>
-            <span class="security-value info">${filename}</span>
+            <span class="security-value info"></span>
         </div>
     `;
+    filenameItem.querySelector(".security-value").textContent = filename;
     container.appendChild(filenameItem);
 }
 
@@ -211,11 +216,12 @@ export function displayShareFunctionality(blob, filename, version, container) {
 
 export function display_error_handler(filename, error_msg, container){
     container.innerHTML = `
-    <h2>Analysis Failed - ${filename}</h2>
+    <h2 class=failure-message></h2>
     <div class="error-message">
         <p><strong>Error:</strong> ${error_msg}</p>
     </div>
-`;
+    `;
+container.querySelector(".failure-message").textContent = `Analysis Failed - ${filename}`    
 }
 
 export function setupResultTab(filename){
@@ -224,9 +230,11 @@ export function setupResultTab(filename){
     const tabButton = document.createElement("button");
     tabButton.className = "tab-button";
     tabButton.innerHTML = `
-        <span class="tab-text">${filename}</span>
+        <span class="tab-text"></span>
         <span class="tab-close" title="Close tab">×</span>
     `;
+    // Set the filename as text content (safe)
+    tabButton.querySelector('.tab-text').textContent = filename;
     tabButton.dataset.tabIndex = index;
 
     const tabContent = document.createElement("div");
