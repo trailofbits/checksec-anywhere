@@ -345,6 +345,8 @@ pub struct CheckSecResults {
     pub cet: bool,
     // bitness info
     pub bitness: u64,
+    // symbol count
+    pub symbol_count: usize,
 }
 impl CheckSecResults {
     #[must_use]
@@ -363,6 +365,7 @@ impl CheckSecResults {
             seh: pe.has_seh(),
             cet: pe.is_cet_compat(),
             bitness: if pe.is_64 { 64 } else { 32 },
+            symbol_count: pe.symbol_count(),
         }
     }
 }
@@ -373,7 +376,7 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "ASLR: {} Authenticode: {} CFG: {} .NET: {} NX: {} \
-            Force Integrity: {} GS: {} Isolation: {} RFG: {} SafeSEH: {} SEH: {}",
+            Force Integrity: {} GS: {} Isolation: {} RFG: {} SafeSEH: {} SEH: {} Symbol Count: {}",
             self.aslr,
             self.authenticode,
             self.cfg,
@@ -384,7 +387,8 @@ impl fmt::Display for CheckSecResults {
             self.isolation,
             self.rfg,
             self.safeseh,
-            self.seh
+            self.seh,
+            self.symbol_count
         )
     }
     #[cfg(feature = "color")]
@@ -393,7 +397,7 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "{} {} {} {} {} {} {} {} {} {} {} {} {} {} \
-             {} {} {} {} {} {} {} {}",
+             {} {} {} {} {} {} {} {} {} {}",
             "ASLR:".bold(),
             self.aslr,
             "Authenticode:".bold(),
@@ -415,7 +419,9 @@ impl fmt::Display for CheckSecResults {
             "SafeSEH:".bold(),
             colorize_bool!(self.safeseh),
             "SEH:".bold(),
-            colorize_bool!(self.seh)
+            colorize_bool!(self.seh),
+            "Symbols".bold(),
+            self.symbol_count
         )
     }
 }
@@ -515,6 +521,8 @@ pub trait Properties {
     /// check `IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT` from the
     /// `IMAGE_OPTIONAL_HEADER32/64`
     fn is_cet_compat(&self) -> bool;
+    // get the number of symbols in the binary
+    fn symbol_count(&self) -> usize;
 }
 impl Properties for PE<'_> {
     fn has_aslr(&self) -> ASLR {
@@ -732,5 +740,8 @@ impl Properties for PE<'_> {
             }
             _ => false,
         }
+    }
+    fn symbol_count(&self) -> usize {
+        self.exports.len()
     }
 }

@@ -63,6 +63,8 @@ pub struct CheckSecResults {
     pub rpath: VecRpath,
     // bitness info
     pub bitness: u64,
+    //Symbol count
+    pub symbol_count: usize,
 }
 impl CheckSecResults {
     #[must_use]
@@ -80,7 +82,8 @@ impl CheckSecResults {
             pie: macho.has_pie(),
             restrict: macho.has_restrict(),
             rpath: macho.has_rpath(),
-            bitness: if macho.is_64 { 64 } else { 32 }
+            bitness: if macho.is_64 { 64 } else { 32 },
+            symbol_count: macho.symbol_count(),
         }
     }
 }
@@ -93,7 +96,7 @@ impl fmt::Display for CheckSecResults {
             f,
             "ARC: {} Architecture: {} Canary: {} Code Signature: {} Encryption: {} \
             Fortify: {} Fortified {:2} NX Heap: {} \
-            NX Stack: {} PIE: {} Restrict: {} RPath: {}",
+            NX Stack: {} PIE: {} Restrict: {} RPath: {} Symbols: {}",
             self.arc,
             self.architecture,
             self.canary,
@@ -105,7 +108,8 @@ impl fmt::Display for CheckSecResults {
             self.nx_stack,
             self.pie,
             self.restrict,
-            self.rpath
+            self.rpath,
+            self.symbol_count
         )
     }
     #[cfg(feature = "color")]
@@ -114,7 +118,7 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} \
-            {} {} {} {} {} {}",
+            {} {} {} {} {} {} {} {}",
             "ARC:".bold(),
             colorize_bool!(self.arc),
             "Architecture:".bold(),
@@ -138,7 +142,9 @@ impl fmt::Display for CheckSecResults {
             "Restrict:".bold(),
             colorize_bool!(self.restrict),
             "RPath:".bold(),
-            self.rpath
+            self.rpath,
+            "Symbols".bold(),
+            self.symbol_count,
         )
     }
 }
@@ -188,6 +194,8 @@ pub trait Properties {
     //fn has_rpath(&self) -> VecRpath;
     /// check for `RPath` in load commands
     fn has_rpath(&self) -> VecRpath;
+    // return the total number of symbols in the binary
+    fn symbol_count(&self) -> usize;
 }
 impl Properties for MachO<'_> {
     fn has_arc(&self) -> bool {
@@ -280,5 +288,8 @@ impl Properties for MachO<'_> {
             return VecRpath::new(vec![Rpath::None]);
         }
         VecRpath::new(paths)
+    }
+    fn symbol_count(&self) -> usize {
+        self.symbols.iter().len()
     }
 }

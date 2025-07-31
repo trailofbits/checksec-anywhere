@@ -3,7 +3,6 @@
 use colored::Colorize;
 #[cfg(target_os = "linux")]
 use either::Either;
-use std::ops::Deref;
 use goblin::elf::dynamic::{
     DF_1_NOW, DF_1_PIE, DF_BIND_NOW, DT_RPATH, DT_RUNPATH,
 };
@@ -28,36 +27,6 @@ use crate::ldso::{LdSoError, LdSoLookup};
 use crate::shared::{Rpath, VecRpath};
 
 static STC_CANARY_KWDS: [&str; 3] = ["__stack_chk_fail", "__stack_chk_guard", "__intel_security_cookie"];
-
-#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
-pub struct SymbolCount{count: usize}
-
-impl Deref for SymbolCount {
-    type Target = usize;
-
-    fn deref(&self) -> &Self::Target {
-        &self.count // or &self.0 if using tuple struct
-    }
-}
-
-impl fmt::Display for SymbolCount {
-    #[cfg(not(feature = "color"))]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<5}", self.count)
-    }
-
-    #[cfg(feature = "color")]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{:<5}",
-            match self.count {
-                0 => format!("{}", self.count).green(),
-                _ => format!("{}", self.count).red(),
-            }
-        )
-    }
-}
 
 /// Relocation Read-Only mode: `None`, `Partial`, or `Full`
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
@@ -252,7 +221,7 @@ pub struct CheckSecResults {
     /// Linked dynamic libraries
     pub dynlibs: Vec<String>,
     // number of symbols
-    pub symbol_count: SymbolCount,
+    pub symbol_count: usize,
     // bitness info
     pub bitness: u64,
 }
@@ -397,7 +366,7 @@ pub trait Properties {
     /// return the corresponding string from dynstrtab for a given `d_tag`
     fn get_dynstr_by_tag(&self, tag: u64) -> Option<&str>;
     // return the total number of symbols in the binary
-    fn symbol_count(&self) -> SymbolCount;
+    fn symbol_count(&self) -> usize;
 }
 
 // readelf -s -W /lib/x86_64-linux-gnu/libc.so.6 | grep _chk
@@ -662,8 +631,8 @@ impl Properties for Elf<'_> {
         }
         VecRpath::new(vec![Rpath::None])
     }
-    fn symbol_count(&self) -> SymbolCount {
-        SymbolCount { count: self.syms.len() }
+    fn symbol_count(&self) -> usize {
+        self.syms.len()
     }
     fn has_runpath(&self) -> VecRpath {
         if self.dynamic.is_some() {

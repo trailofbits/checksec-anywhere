@@ -42,10 +42,6 @@ export function getFortifyClass(value) {
     return fortifyMap[value] || 'info';
 }
 
-export function getSymbolCountClass(value) {
-    return value.count > 0 ? 'insecure' : 'secure';
-}
-
 export function getPathClass(value) {
     // Special handling for rpath/runpath - None values should be green (secure)
     if (Array.isArray(value.paths) && value.paths.length === 1) {
@@ -75,7 +71,6 @@ export function getSecurityClass(key, value) {
         'nx': getNxClass,
         'pie': getPieClass,
         'fortify': getFortifyClass,
-        'symbol_count': getSymbolCountClass,
         'rpath': getPathClass,
         'runpath': getPathClass
     };
@@ -113,10 +108,6 @@ export function formatSecurityValue(key, value) {
     
     if (Array.isArray(value)) {
         return `${value.length} entries`;
-    }
-
-    if (key === "symbol_count"){
-        return `${value.count}`
     }
     
     return String(value);

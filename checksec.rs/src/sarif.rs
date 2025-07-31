@@ -211,7 +211,7 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
             .message(sarif::Message::builder()
                 .text(format!("Symbol count: {}", elf_result.symbol_count.to_string().trim_end()))
                 .build())
-            .level(if *elf_result.symbol_count == 0 {
+            .level(if elf_result.symbol_count == 0 {
                     sarif::ResultLevel::None
                 }
                 else{
