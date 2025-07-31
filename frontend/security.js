@@ -153,7 +153,9 @@ export function formatSecurityName(key) {
         'nx_heap': 'NX Heap',
         'nx_stack': 'NX Stack',
         'architecture': 'Architecture',
-        'asan': 'Address Sanitizer'
+        'asan': 'Address Sanitizer',
+        'bitness': 'Bitness',
+        'endianness': 'Endianness'
     };
     
     return nameMap[key];

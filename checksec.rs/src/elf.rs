@@ -6,7 +6,7 @@ use either::Either;
 use goblin::elf::dynamic::{
     DF_1_NOW, DF_1_PIE, DF_BIND_NOW, DT_RPATH, DT_RUNPATH,
 };
-use goblin::elf::header::{ET_DYN, ET_REL};
+use goblin::elf::header::{ET_DYN, ET_REL, machine_to_str};
 use goblin::elf::program_header::{PT_GNU_RELRO, PT_GNU_STACK, PF_X};
 #[cfg(feature = "disassembly")]
 use goblin::elf::section_header::{SHF_ALLOC, SHF_EXECINSTR, SHT_PROGBITS};
@@ -24,7 +24,7 @@ use crate::colorize_bool;
 use crate::disassembly::{has_stack_clash_protection, Bitness};
 #[cfg(target_os = "linux")]
 use crate::ldso::{LdSoError, LdSoLookup};
-use crate::shared::{Rpath, VecRpath};
+use crate::shared::{Rpath, VecRpath, Endianness};
 
 static STC_CANARY_KWDS: [&str; 3] = ["__stack_chk_fail", "__stack_chk_guard", "__intel_security_cookie"];
 
@@ -194,6 +194,11 @@ impl fmt::Display for Fortify {
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CheckSecResults {
+    pub architecture: String,
+    // bitness info
+    pub bitness: u64,
+    // endianness info
+    pub endianness: Endianness,
     /// Stack Canary (*CFLAGS=*`-fstack-protector*`)
     pub canary: bool,
     /// Clang Control Flow Integrity (*CFLAGS=*`-fsanitize=cfi-*`)
@@ -222,8 +227,6 @@ pub struct CheckSecResults {
     pub dynlibs: Vec<String>,
     // number of symbols
     pub symbol_count: usize,
-    // bitness info
-    pub bitness: u64,
     // contains asan instrumentation
     pub asan: bool,
 }
@@ -239,6 +242,9 @@ impl CheckSecResults {
             _ => Fortify::Undecidable, // This case should never happen
         };
         Self {
+            architecture: elf.get_architecture(),
+            bitness: if elf.is_64 { 64 } else { 32 },
+            endianness: if elf.little_endian {Endianness::Little} else {Endianness::Big},
             canary: elf.has_canary(),
             clang_cfi: elf.has_clang_cfi(),
             clang_safestack: elf.has_clang_safestack(),
@@ -257,7 +263,6 @@ impl CheckSecResults {
                 .map(std::string::ToString::to_string)
                 .collect(),
             symbol_count: elf.symbol_count(),
-            bitness: if elf.is_64 { 64 } else { 32 },
             asan: elf.has_asan(),
         }
     }
@@ -269,8 +274,11 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Canary: {} CFI: {} SafeStack: {} StackClash: {} Fortify: {} Fortified: {:2} \
+            "Architecture: {} Bitness: {} Endianness: {} Canary: {} CFI: {} SafeStack: {} StackClash: {} Fortify: {} Fortified: {:2} \
             Fortifiable: {:2} NX: {} PIE: {} Relro: {} RPATH: {} RUNPATH: {} Symbols: {} Asan: {}",
+            self.architecture,
+            self.bitness,
+            self.endianness,
             self.canary,
             self.clang_cfi,
             self.clang_safestack,
@@ -292,7 +300,13 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
+            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
+            "Architecture:".bold(),
+            self.architecture,
+            "Bitness:".bold(),
+            self.bitness,
+            "Endianness:".bold(),
+            self.endianness,
             "Canary:".bold(),
             colorize_bool!(self.canary),
             "CFI:".bold(),
@@ -344,6 +358,8 @@ impl fmt::Display for CheckSecResults {
 /// }
 /// ```
 pub trait Properties {
+    /// get the target architecture for the binary
+    fn get_architecture(&self) -> String;
     /// check for `__stack_chk_fail` or `__intel_security_cookie` in dynstrtab
     fn has_canary(&self) -> bool;
     /// check for symbols containing `.cfi` in dynstrtab
@@ -471,6 +487,9 @@ const FORTIFIABLE_FUNCTIONS: [&str; 83] = [
  */
 
 impl Properties for Elf<'_> {
+    fn get_architecture(&self) -> String {
+        machine_to_str(self.header.e_machine).to_string()
+    }
    fn has_canary(&self) -> bool {
         for sym in &self.dynsyms {
             if let Some(name) = self.dynstrtab.get_at(sym.st_name) {

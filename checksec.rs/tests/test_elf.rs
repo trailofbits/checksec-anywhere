@@ -333,3 +333,13 @@ fn test_asan_absent(){
         _ => {panic!("Checksec failed")},
     }
 }
+
+#[test]
+fn test_get_architecture(){
+    let filename = "./tests/binaries/elf/all".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::Elf(elf_result) => {assert_eq!(elf_result.architecture, "X86_64".to_string())},
+        _ => {panic!("Checksec failed")},
+    }
+}

@@ -5,7 +5,7 @@ use goblin::mach::load_command::CommandVariant;
 use goblin::mach::constants::cputype::get_arch_name_from_types;
 use goblin::mach::MachO;
 use serde::{Deserialize, Serialize};
-use crate::shared::{Rpath, VecRpath};
+use crate::shared::{Rpath, VecRpath, Endianness};
 use std::fmt;
 
 #[cfg(feature = "color")]
@@ -15,7 +15,6 @@ use crate::colorize_bool;
 const MH_ALLOW_STACK_EXECUTION: u32 = 0x0002_0000;
 const MH_PIE: u32 = 0x0020_0000;
 const MH_NO_HEAP_EXECUTION: u32 = 0x0100_0000;
-
 /// Checksec result struct for `MachO32/64` binaries
 ///
 /// **Example**
@@ -36,10 +35,14 @@ const MH_NO_HEAP_EXECUTION: u32 = 0x0100_0000;
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CheckSecResults {
-    /// Automatic Reference Counting
-    pub arc: bool,
     /// Target architecture for the binary
     pub architecture: String,
+    // bitness info
+    pub bitness: u64,
+    // endianness info
+    pub endianness: Endianness,
+    /// Automatic Reference Counting
+    pub arc: bool,
     /// Stack Canary
     pub canary: bool,
     /// Code Signature (codesign)
@@ -61,8 +64,6 @@ pub struct CheckSecResults {
     /// Load Command @rpath
     //rpath: VecRpath,
     pub rpath: VecRpath,
-    // bitness info
-    pub bitness: u64,
     //Symbol count
     pub symbol_count: usize,
     // Has asan instrumentation
@@ -72,8 +73,10 @@ impl CheckSecResults {
     #[must_use]
     pub fn parse(macho: &MachO) -> Self {
         Self {
-            arc: macho.has_arc(),
             architecture: macho.get_architecture(),
+            bitness: if macho.is_64 { 64 } else { 32 },
+            endianness: if macho.little_endian {Endianness::Little} else {Endianness::Big},
+            arc: macho.has_arc(),
             canary: macho.has_canary(),
             code_signature: macho.has_code_signature(),
             encrypted: macho.has_encrypted(),
@@ -84,7 +87,6 @@ impl CheckSecResults {
             pie: macho.has_pie(),
             restrict: macho.has_restrict(),
             rpath: macho.has_rpath(),
-            bitness: if macho.is_64 { 64 } else { 32 },
             symbol_count: macho.symbol_count(),
             asan: macho.has_asan(),
         }
@@ -97,11 +99,13 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "ARC: {} Architecture: {} Canary: {} Code Signature: {} Encryption: {} \
+            "Architecture: {} Bitness: {} Endianness: {} ARC: {} Canary: {} Code Signature: {} Encryption: {} \
             Fortify: {} Fortified {:2} NX Heap: {} \
             NX Stack: {} PIE: {} Restrict: {} RPath: {} Symbols: {} Asan: {}",
-            self.arc,
             self.architecture,
+            self.bitness,
+            self.endianness,
+            self.arc,
             self.canary,
             self.code_signature,
             self.encrypted,
@@ -121,12 +125,16 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} \
-            {} {} {} {} {} {} {} {} {} {}",
-            "ARC:".bold(),
-            colorize_bool!(self.arc),
+            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} \
+            {} {} {} {} {} {} {} {} {} {} {} {}",
             "Architecture:".bold(),
             self.architecture,
+            "Bitness:".bold(),
+            self.bitness,
+            "Endianness:".bold(),
+            self.endianness,
+            "ARC:".bold(),
+            colorize_bool!(self.arc),
             "Canary:".bold(),
             colorize_bool!(self.canary),
             "Code Signature:".bold(),
@@ -174,10 +182,10 @@ impl fmt::Display for CheckSecResults {
 /// }
 /// ```
 pub trait Properties {
-    /// check import names for `_objc_release`
-    fn has_arc(&self) -> bool;
     /// Get target architecture for the binary, helpful when analyzing multi-architecture Mach-O files.
     fn get_architecture(&self) -> String;
+    /// check import names for `_objc_release`
+    fn has_arc(&self) -> bool;
     /// check import names for `___stack_chk_fail` or `___stack_chk_guard`
     fn has_canary(&self) -> bool;
     /// check data size of code signature in load commands

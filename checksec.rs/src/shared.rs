@@ -6,6 +6,23 @@ use std::fmt;
 use std::ops::Deref;
 
 
+/// Describe the endianness of the binary
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+pub enum Endianness {
+    Big,
+    Little
+}
+
+impl fmt::Display for Endianness {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Endianness::Big => write!(f, "Big"),
+            Endianness::Little => write!(f, "Little"),
+        }
+    }
+}
+
+
 /// Split contents of `DT_RPATH`/`DT_RUNPATH` or @rpath entries
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub enum Rpath {

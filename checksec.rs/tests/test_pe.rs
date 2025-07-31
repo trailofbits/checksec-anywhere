@@ -215,3 +215,13 @@ fn test_not_cet_compat(){
 }
 
 // TODO: Find .exe with asan instrumentation
+
+#[test]
+fn test_architecture(){
+    let filename = "./tests/binaries/pe/pegoat-ineffective-cfg-no-dynamicbase.exe".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::PE(pe_result) => {assert_eq!(pe_result.architecture, "X86_64".to_string())},
+        _ => {panic!("Checksec failed")},
+    }
+}

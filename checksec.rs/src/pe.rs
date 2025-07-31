@@ -5,13 +5,14 @@ use goblin::pe::utils::find_offset;
 use goblin::pe::PE;
 use goblin::pe::{
     data_directories::DataDirectory, options::ParseOptions,
-    section_table::SectionTable,
+    section_table::SectionTable, header
 };
 use scroll::Pread;
 use scroll_derive::Pread;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::mem::size_of;
+use crate::shared::{Endianness};
 
 #[cfg(feature = "disassembly")]
 use crate::disassembly::{function_has_ge, Bitness};
@@ -319,6 +320,11 @@ impl fmt::Display for ASLR {
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CheckSecResults {
+    pub architecture: String,
+    // bitness info
+    pub bitness: u64,
+    // endianness info
+    pub endianness: Endianness,
     /// Address Space Layout Randomization
     pub aslr: ASLR,
     /// Authenticode
@@ -343,8 +349,6 @@ pub struct CheckSecResults {
     pub seh: bool,
     // CET Compatible
     pub cet: bool,
-    // bitness info
-    pub bitness: u64,
     // symbol count
     pub symbol_count: usize,
     // has asan instrumentation
@@ -354,6 +358,9 @@ impl CheckSecResults {
     #[must_use]
     pub fn parse(pe: &PE, buffer: &[u8]) -> Self {
         Self {
+            architecture: pe.get_architecture(),
+            bitness: if pe.is_64 { 64 } else { 32 },
+            endianness: Endianness::Little, //Windows binaries are always little-endian
             aslr: pe.has_aslr(),
             authenticode: pe.has_authenticode(buffer),
             cfg: pe.has_cfg(),
@@ -366,7 +373,6 @@ impl CheckSecResults {
             safeseh: pe.has_safe_seh(buffer),
             seh: pe.has_seh(),
             cet: pe.is_cet_compat(),
-            bitness: if pe.is_64 { 64 } else { 32 },
             symbol_count: pe.symbol_count(),
             asan: pe.has_asan(),
         }
@@ -378,8 +384,11 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "ASLR: {} Authenticode: {} CFG: {} .NET: {} NX: {} \
+            "Architecture: {} Bitness: {} Endianness: {} ASLR: {} Authenticode: {} CFG: {} .NET: {} NX: {} \
             Force Integrity: {} GS: {} Isolation: {} RFG: {} SafeSEH: {} SEH: {} Symbol Count: {} Asan: {}",
+            self.architecture,
+            self.bitness,
+            self.endianness,
             self.aslr,
             self.authenticode,
             self.cfg,
@@ -400,9 +409,15 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} \
+            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} \
              {} {} {} {} {} {} {} {} {} {} {} {}",
-            "ASLR:".bold(),
+            "Architecture:".bold(),
+            self.architecture,
+            "Bitness:".bold(),
+            self.bitness,
+            "Endianness:".bold(),
+            self.endianness,
+             "ASLR:".bold(),
             self.aslr,
             "Authenticode:".bold(),
             colorize_bool!(self.authenticode),
@@ -460,6 +475,8 @@ impl fmt::Display for CheckSecResults {
 /// read-only memory-mapped version of the original file must be provided
 /// for check functions that require it.
 pub trait Properties {
+    // get the target architecture for the PE file
+    fn get_architecture(&self) -> String;
     /// check for both `IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE` *(0x0040)* and
     /// `IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA` *(0x0020)* in
     /// `DllCharacteristics` within the `IMAGE_OPTIONAL_HEADER32/64`
@@ -757,5 +774,8 @@ impl Properties for PE<'_> {
             Some(name) => name == "__asan_init",
             _ => false,
         })
+    }
+    fn get_architecture(&self) -> String {
+        header::machine_to_str(self.header.coff_header.machine).to_string()
     }
 }
