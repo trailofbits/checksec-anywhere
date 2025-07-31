@@ -566,7 +566,6 @@ body {
     background: #161b22;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    border: 1px solid #30363d;
     margin-top: 20px;
 }
 
@@ -764,6 +763,60 @@ body {
     gap: 8px;
 }
 
+/* Tabs button container for horizontal layout */
+.tabs-button-container {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.tabs-button-container .combined-sarif-btn,
+.tabs-button-container .close-all-reports-btn {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* When only close all button is present, make it take full width */
+.tabs-button-container:has(.close-all-reports-btn:only-child) .close-all-reports-btn {
+    flex: none;
+    width: 100%;
+}
+
+/* Close all reports button styles */
+.close-all-reports-btn {
+    background: #444c56;
+    color: #ffffff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.close-all-reports-btn:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(68, 76, 86, 0.3);
+}
+
+.close-all-reports-btn:disabled {
+    background: #444c56;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.close-all-reports-btn span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* Persistent batch button styles */
 .persistent-batch-btn {
     background: #238636;
@@ -906,5 +959,18 @@ body {
     .upload-type-btn {
         justify-content: center;
         padding: 10px 16px;
+    }
+} 
+
+/* Responsive design for button container */
+@media (max-width: 600px) {
+    .tabs-button-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .tabs-button-container .combined-sarif-btn,
+    .tabs-button-container .close-all-reports-btn {
+        margin-bottom: 0;
     }
 } 

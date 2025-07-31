@@ -436,21 +436,25 @@ export function displayResults(batchResults) {
 
     tabsContainer.style.display = "block";
     tabsContainer.scrollIntoView({ behavior: 'smooth' });
-    addCombinedSarifButton();
+    addHeaderButtons();
 }
 
-function addCombinedSarifButton() {
+function addHeaderButtons() {
     const allTabs = tabsHeader.querySelectorAll(".tab-button");
     
-    // Only show combined button if there are multiple tabs
+    // Only show buttons if there are multiple tabs
     if (allTabs.length <= 1) {
         return;
     }
     
-    // Check if combined button already exists
-    const existingButton = document.getElementById('combinedSarifBtn');
-    if (existingButton) {
-        updateCombinedButtonCount(existingButton);
+    // Check if button container already exists
+    const existingContainer = document.querySelector('.tabs-button-container');
+    if (existingContainer) {
+        // Update existing SARIF button if it exists
+        const existingSarifButton = document.getElementById('combinedSarifBtn');
+        if (existingSarifButton) {
+            updateCombinedButtonCount(existingSarifButton);
+        }
         return;
     }
     
@@ -461,48 +465,83 @@ function addCombinedSarifButton() {
             successfulResults.push({file: entry.filename, blobs: [entry.blob], libraries: []});
         }
     });
-    if (successfulResults.length === 0) {
-        return;
+    
+    // Create button container for horizontal layout
+    const buttonContainer = document.createElement("div");
+    buttonContainer.className = "tabs-button-container";
+    
+    // Create close all reports button (always show this)
+    const closeAllButton = document.createElement("button");
+    closeAllButton.id = "closeAllReportsBtn";
+    closeAllButton.className = "close-all-reports-btn";
+    closeAllButton.innerHTML = '<span>Close All Reports</span>';
+    
+    // Add click handler for close all button
+    closeAllButton.addEventListener('click', () => {
+        // Close all tabs
+        const allTabButtons = tabsHeader.querySelectorAll('.tab-button');
+        const allTabContents = tabsContent.querySelectorAll('.tab-content');
+        
+        // Remove all tabs
+        allTabButtons.forEach(button => button.remove());
+        allTabContents.forEach(content => content.remove());
+        
+        // Clear tab results
+        tabResults.clear();
+        
+        // Hide tabs container
+        tabsContainer.style.display = 'none';
+        
+        // Remove button container
+        buttonContainer.remove();
+    });
+    
+    // Add close all button to container
+    buttonContainer.appendChild(closeAllButton);
+    
+    // Only create SARIF button if there are successful results
+    if (successfulResults.length > 0) {
+        const combinedButton = document.createElement("button");
+        combinedButton.id = "combinedSarifBtn";
+        combinedButton.className = "combined-sarif-btn";
+        combinedButton.innerHTML = `
+            <span>Download Combined SARIF Report (${successfulResults.length} files)</span>
+        `;
+        
+        // Add click handler for combined SARIF button
+        combinedButton.addEventListener('click', async () => {
+            combinedButton.disabled = true;
+            combinedButton.innerHTML = '<span>Generating combined report...</span>';
+            
+            try {
+                // Generate combined SARIF report with only successful results
+                const combinedSarif = await generate_sarif_report(successfulResults);
+                
+                // Download the combined report
+                const filename = `combined-checksec-report-${new Date().toISOString().split('T')[0]}`;
+                const blob = new Blob([combinedSarif], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${filename}.sarif`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                combinedButton.innerHTML = '<span>Combined report downloaded</span>';
+            } catch (err) {
+                console.error('Failed to generate combined SARIF report:', err);
+                combinedButton.innerHTML = '<span>Error - Try Again</span>';
+            }
+        });
+        
+        // Insert SARIF button before close all button
+        buttonContainer.insertBefore(combinedButton, closeAllButton);
     }
     
-    // Create combined SARIF button
-    const combinedButton = document.createElement("button");
-    combinedButton.id = "combinedSarifBtn";
-    combinedButton.className = "combined-sarif-btn";
-    combinedButton.innerHTML = `
-        <span>Download Combined SARIF Report (${successfulResults.length} files successfully processed)</span>
-    `;
-    
-    // Position the button above the tabs
-    tabsContainer.insertBefore(combinedButton, tabsHeader);
-    
-    // Add click handler
-    combinedButton.addEventListener('click', async () => {
-        combinedButton.disabled = true;
-        combinedButton.innerHTML = '<span>Generating combined report...</span>';
-        
-        try {
-            // Generate combined SARIF report with only successful results
-            const combinedSarif = await generate_sarif_report(successfulResults);
-            
-            // Download the combined report
-            const filename = `combined-checksec-report-${new Date().toISOString().split('T')[0]}`;
-            const blob = new Blob([combinedSarif], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${filename}.sarif`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            combinedButton.innerHTML = '<span>Combined report downloaded</span>';
-        } catch (err) {
-            console.error('Failed to generate combined SARIF report:', err);
-            combinedButton.innerHTML = '<span>Error - Try Again</span>';
-        }
-    });
+    // Position the button container above the tabs
+    tabsContainer.insertBefore(buttonContainer, tabsHeader);
 }
 
 function updateCombinedButtonCount(button) {
