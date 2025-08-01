@@ -275,7 +275,7 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "Architecture: {} Bitness: {} Endianness: {} Canary: {} CFI: {} SafeStack: {} StackClash: {} Fortify: {} Fortified: {:2} \
-            Fortifiable: {:2} NX: {} PIE: {} Relro: {} RPATH: {} RUNPATH: {} Symbols: {} Asan: {}",
+            Fortifiable: {:2} NX: {} PIE: {} Relro: {} RPATH: {} RUNPATH: {} Symbols: {} ASan: {}",
             self.architecture,
             self.bitness,
             self.endianness,
@@ -333,7 +333,7 @@ impl fmt::Display for CheckSecResults {
             self.runpath,
             "Symbols".bold(),
             self.symbol_count,
-            "Asan".bold(),
+            "ASan".bold(),
             colorize_bool!(!self.asan),
         )
     }

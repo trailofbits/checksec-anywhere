@@ -385,7 +385,7 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "Architecture: {} Bitness: {} Endianness: {} ASLR: {} Authenticode: {} CFG: {} .NET: {} NX: {} \
-            Force Integrity: {} GS: {} Isolation: {} RFG: {} SafeSEH: {} SEH: {} Symbol Count: {} Asan: {}",
+            Force Integrity: {} GS: {} Isolation: {} RFG: {} SafeSEH: {} SEH: {} Symbol Count: {} ASan: {}",
             self.architecture,
             self.bitness,
             self.endianness,
@@ -441,7 +441,7 @@ impl fmt::Display for CheckSecResults {
             colorize_bool!(self.seh),
             "Symbols".bold(),
             self.symbol_count,
-            "Asan".bold(),
+            "ASan".bold(),
             colorize_bool!(!self.asan),
         )
     }

@@ -221,7 +221,7 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
             .level(sarif::ResultLevel::Note)
             .build(),
             sarif::Result::builder()
-            .rule_id("asan".to_string())
+            .rule_id("ASan".to_string())
             .message(sarif::Message::builder()
                 .text(format!("Address Sanitizer Instrumentation: {}", elf_result.asan))
                 .build())
@@ -399,7 +399,7 @@ fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
             .level(sarif::ResultLevel::Note)
             .build(),
             sarif::Result::builder()
-            .rule_id("asan".to_string())
+            .rule_id("ASan".to_string())
             .message(sarif::Message::builder()
                 .text(format!("Address Sanitizer Instrumentation: {}", pe_result.asan))
                 .build())
@@ -547,7 +547,7 @@ fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Res
             .level(sarif::ResultLevel::Note)
             .build(),
             sarif::Result::builder()
-            .rule_id("asan".to_string())
+            .rule_id("ASan".to_string())
             .message(sarif::Message::builder()
                 .text(format!("Address Sanitizer Instrumentation: {}", macho_result.asan))
                 .build())

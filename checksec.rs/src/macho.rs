@@ -101,7 +101,7 @@ impl fmt::Display for CheckSecResults {
             f,
             "Architecture: {} Bitness: {} Endianness: {} ARC: {} Canary: {} Code Signature: {} Encryption: {} \
             Fortify: {} Fortified {:2} NX Heap: {} \
-            NX Stack: {} PIE: {} Restrict: {} RPath: {} Symbols: {} Asan: {}",
+            NX Stack: {} PIE: {} Restrict: {} RPath: {} Symbols: {} ASan: {}",
             self.architecture,
             self.bitness,
             self.endianness,
@@ -157,7 +157,7 @@ impl fmt::Display for CheckSecResults {
             self.rpath,
             "Symbols".bold(),
             self.symbol_count,
-            "Asan".bold(),
+            "ASan".bold(),
             colorize_bool!(!self.asan),
         )
     }
