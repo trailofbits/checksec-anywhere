@@ -343,3 +343,23 @@ fn test_get_architecture(){
         _ => {panic!("Checksec failed")},
     }
 }
+
+#[test]
+fn test_dynamically_linked(){
+    let filename = "./tests/binaries/elf/all".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::Elf(elf_result) => {assert_eq!(elf_result.dyn_linking, true)},
+        _ => {panic!("Checksec failed")},
+    }
+}
+
+#[test]
+fn test_statically_linked(){
+    let filename = "./tests/binaries/elf/static_linking".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::Elf(elf_result) => {assert_eq!(elf_result.dyn_linking, false)},
+        _ => {panic!("Checksec failed")},
+    }
+}

@@ -325,6 +325,8 @@ pub struct CheckSecResults {
     pub bitness: u64,
     // endianness info
     pub endianness: Endianness,
+    // describes if the binary is dynamically linked
+    pub dyn_linking: bool,
     /// Address Space Layout Randomization
     pub aslr: ASLR,
     /// Authenticode
@@ -361,6 +363,7 @@ impl CheckSecResults {
             architecture: pe.get_architecture(),
             bitness: if pe.is_64 { 64 } else { 32 },
             endianness: Endianness::Little, //Windows binaries are always little-endian
+            dyn_linking: pe.import_data.is_some(),
             aslr: pe.has_aslr(),
             authenticode: pe.has_authenticode(buffer),
             cfg: pe.has_cfg(),
@@ -375,6 +378,7 @@ impl CheckSecResults {
             cet: pe.is_cet_compat(),
             symbol_count: pe.symbol_count(),
             asan: pe.has_asan(),
+
         }
     }
 }
@@ -384,11 +388,12 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Architecture: {} Bitness: {} Endianness: {} ASLR: {} Authenticode: {} CFG: {} .NET: {} NX: {} \
+            "Architecture: {} Bitness: {} Endianness: {} Dynamic Linking: {} ASLR: {} Authenticode: {} CFG: {} .NET: {} NX: {} \
             Force Integrity: {} GS: {} Isolation: {} RFG: {} SafeSEH: {} SEH: {} Symbol Count: {} ASan: {}",
             self.architecture,
             self.bitness,
             self.endianness,
+            self.dyn_linking,
             self.aslr,
             self.authenticode,
             self.cfg,
@@ -410,13 +415,15 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} \
-             {} {} {} {} {} {} {} {} {} {} {} {}",
+             {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
             "Architecture:".bold(),
             self.architecture,
             "Bitness:".bold(),
             self.bitness,
             "Endianness:".bold(),
             self.endianness,
+            "Dynamic Linking".bold(),
+            self.dyn_linking,
              "ASLR:".bold(),
             self.aslr,
             "Authenticode:".bold(),

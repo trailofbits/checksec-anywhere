@@ -225,3 +225,15 @@ fn test_architecture(){
         _ => {panic!("Checksec failed")},
     }
 }
+
+#[test]
+fn test_dynamic_linking(){
+    let filename = "./tests/binaries/pe/pegoat-ineffective-cfg-no-dynamicbase.exe".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::PE(pe_result) => {assert_eq!(pe_result.dyn_linking, true)},
+        _ => {panic!("Checksec failed")},
+    }
+}
+
+// TODO: Find a statically linked .exe -- Generally seems like static linking isn't supported by windows OS.

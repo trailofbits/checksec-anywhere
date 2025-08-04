@@ -57,6 +57,9 @@ export function getBooleanClass(key, value) {
     if (key === 'asan'){
         return value ? 'insecure': 'secure';
     }
+    if (key == 'dyn_linking'){
+        return 'info';
+    }
     return value ? 'secure' : 'insecure';
 }
 
@@ -155,7 +158,8 @@ export function formatSecurityName(key) {
         'architecture': 'Architecture',
         'asan': 'Address Sanitizer',
         'bitness': 'Bitness',
-        'endianness': 'Endianness'
+        'endianness': 'Endianness',
+        'dyn_linking': 'Dynamic Linking',
     };
     
     return nameMap[key];

@@ -41,6 +41,8 @@ pub struct CheckSecResults {
     pub bitness: u64,
     // endianness info
     pub endianness: Endianness,
+    // describes if the binary is dynamically linked
+    pub dyn_linking: bool,
     /// Automatic Reference Counting
     pub arc: bool,
     /// Stack Canary
@@ -76,6 +78,7 @@ impl CheckSecResults {
             architecture: macho.get_architecture(),
             bitness: if macho.is_64 { 64 } else { 32 },
             endianness: if macho.little_endian {Endianness::Little} else {Endianness::Big},
+            dyn_linking: macho.libs.len() > 0,
             arc: macho.has_arc(),
             canary: macho.has_canary(),
             code_signature: macho.has_code_signature(),
@@ -99,12 +102,13 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Architecture: {} Bitness: {} Endianness: {} ARC: {} Canary: {} Code Signature: {} Encryption: {} \
+            "Architecture: {} Bitness: {} Endianness: {} Dynamic Linking: {} ARC: {} Canary: {} Code Signature: {} Encryption: {} \
             Fortify: {} Fortified {:2} NX Heap: {} \
             NX Stack: {} PIE: {} Restrict: {} RPath: {} Symbols: {} ASan: {}",
             self.architecture,
             self.bitness,
             self.endianness,
+            self.dyn_linking,
             self.arc,
             self.canary,
             self.code_signature,
@@ -125,7 +129,7 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} \
+            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} \
             {} {} {} {} {} {} {} {} {} {} {} {}",
             "Architecture:".bold(),
             self.architecture,
@@ -133,6 +137,8 @@ impl fmt::Display for CheckSecResults {
             self.bitness,
             "Endianness:".bold(),
             self.endianness,
+            "Dynamic Linking".bold(),
+            self.dyn_linking,
             "ARC:".bold(),
             colorize_bool!(self.arc),
             "Canary:".bold(),
