@@ -199,6 +199,8 @@ pub struct CheckSecResults {
     pub bitness: u64,
     // endianness info
     pub endianness: Endianness,
+    // describes if the binary is dynamically linked
+    pub dyn_linking: bool,
     /// Stack Canary (*CFLAGS=*`-fstack-protector*`)
     pub canary: bool,
     /// Clang Control Flow Integrity (*CFLAGS=*`-fsanitize=cfi-*`)
@@ -245,6 +247,7 @@ impl CheckSecResults {
             architecture: elf.get_architecture(),
             bitness: if elf.is_64 { 64 } else { 32 },
             endianness: if elf.little_endian {Endianness::Little} else {Endianness::Big},
+            dyn_linking: elf.dynamic.is_some(),
             canary: elf.has_canary(),
             clang_cfi: elf.has_clang_cfi(),
             clang_safestack: elf.has_clang_safestack(),
@@ -274,11 +277,12 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Architecture: {} Bitness: {} Endianness: {} Canary: {} CFI: {} SafeStack: {} StackClash: {} Fortify: {} Fortified: {:2} \
+            "Architecture: {} Bitness: {} Endianness: {} Dynamic Linking: {} Canary: {} CFI: {} SafeStack: {} StackClash: {} Fortify: {} Fortified: {:2} \
             Fortifiable: {:2} NX: {} PIE: {} Relro: {} RPATH: {} RUNPATH: {} Symbols: {} ASan: {}",
             self.architecture,
             self.bitness,
             self.endianness,
+            self.dyn_linking,
             self.canary,
             self.clang_cfi,
             self.clang_safestack,
@@ -300,13 +304,15 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
+            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
             "Architecture:".bold(),
             self.architecture,
             "Bitness:".bold(),
             self.bitness,
             "Endianness:".bold(),
             self.endianness,
+            "Dynamic Linking:".bold(),
+            self.dyn_linking,
             "Canary:".bold(),
             colorize_bool!(self.canary),
             "CFI:".bold(),

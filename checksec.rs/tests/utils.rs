@@ -10,7 +10,7 @@ pub fn file_to_buf(filename: &String) -> Vec<u8>{
         return buf;
     }
     else{
-        println!("reading of provided file path failed, test suite is misconfigured");
+        println!("reading of provided file path ({}) failed, test suite is misconfigured", filename);
         process::exit(1)
     }
 }

@@ -255,3 +255,15 @@ fn test_symbol_count(){
         _ => {panic!("Checksec failed")},
     }
 }
+
+#[test]
+fn test_dynamic_linking(){
+    let filename = "./tests/binaries/Mach-O/no_canary".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::MachO(macho_result) => {assert_eq!(macho_result.dyn_linking, true)},
+        _ => {panic!("Checksec failed")},
+    }
+}
+
+// TODO: Find statically-linked macho binary? Seems like this generally isn't supported by macOS.

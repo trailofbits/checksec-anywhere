@@ -67,7 +67,15 @@ export function displayFileRow(filename, container) {
 }
 
 export function displayBinaryData(binaryData, container) {
+    // Check if dynamic linking is enabled
+    const isDynamicLinkingEnabled = binaryData.dyn_linking === true;
+    
     for (const [key, value] of Object.entries(binaryData)) {
+        // Skip dynamic libraries row entirely if dynamic linking is disabled
+        if (key === 'dynlibs' && !isDynamicLinkingEnabled) {
+            continue;
+        }
+        
         const item = document.createElement("li");
         item.className = "security-item";
         
@@ -91,8 +99,8 @@ export function displayBinaryData(binaryData, container) {
             addPathDetails(item, key, value);
         }
 
-        // Add dynamic library details if applicable
-        if (key === 'dynlibs' && Array.isArray(value) && value.length > 0) {
+        // Add dynamic library details only if dynamic linking is enabled
+        if (key === 'dynlibs' && Array.isArray(value) && value.length > 0 && isDynamicLinkingEnabled) {
             addDynLibDetails(item, value);
         }
         
