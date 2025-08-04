@@ -29,6 +29,7 @@ ringbuffer = "0.15.0"
 url = "2.5.4"
 sha2 = "0.10.9"
 hex = "0.4.3"
+infer = "0.19.0"
 serde-sarif = "0.8.0"
 clap = {version = "4.0.14", features = ["cargo"]}
 colored = {version = "2.0.0", optional = true}

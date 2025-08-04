@@ -2,6 +2,7 @@
 use goblin::{Object};
 use goblin::mach::{Mach, MultiArch, SingleArch::Archive, SingleArch::MachO};
 use std::path::PathBuf;
+use infer;
 
 #[cfg(feature = "disassembly")]
 pub mod disassembly;
@@ -118,8 +119,8 @@ pub fn get_blob_from_buf (buffer: &[u8]) -> Vec<Blob> {
             }
             Mach::Fat(mach) => process_fat_mach(mach, buffer)
         },
-        Ok(Object::Unknown(magic_num)) => {
-            vec![Blob::new(BinType::Error, BinSpecificProperties::Error(format!("Unknown magic number: {}", magic_num)))]
+        Ok(Object::Unknown(_)) => {
+            vec![Blob::new(BinType::Error, BinSpecificProperties::Error(format!("Unsupported File Format (File Type: {})", get_file_type(buffer))))]
         }
         Err(res) => vec![Blob::new(BinType::Error, BinSpecificProperties::Error(res.to_string()))],
         _ => vec![Blob::new(BinType::Error, BinSpecificProperties::Error("unsupported file type".to_string()))]
@@ -179,3 +180,9 @@ fn parse_archive(
         .collect()
 }
 
+fn get_file_type(buffer: &[u8]) -> &str {
+    match infer::get(buffer) {
+        Some(file_kind) => file_kind.extension(),
+        _ => "Unknown"
+    }
+}
