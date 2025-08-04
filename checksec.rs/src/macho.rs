@@ -63,13 +63,13 @@ pub struct CheckSecResults {
     pub pie: bool,
     /// Restrict segment
     pub restrict: bool,
+    // Has asan instrumentation
+    pub asan: bool,
     /// Load Command @rpath
     //rpath: VecRpath,
     pub rpath: VecRpath,
     //Symbol count
     pub symbol_count: usize,
-    // Has asan instrumentation
-    pub asan: bool,
 }
 impl CheckSecResults {
     #[must_use]
@@ -89,9 +89,9 @@ impl CheckSecResults {
             nx_stack: macho.has_nx_stack(),
             pie: macho.has_pie(),
             restrict: macho.has_restrict(),
+            asan: macho.has_asan(),
             rpath: macho.has_rpath(),
             symbol_count: macho.symbol_count(),
-            asan: macho.has_asan(),
         }
     }
 }
@@ -104,7 +104,7 @@ impl fmt::Display for CheckSecResults {
             f,
             "Architecture: {} Bitness: {} Endianness: {} Dynamic Linking: {} ARC: {} Canary: {} Code Signature: {} Encryption: {} \
             Fortify: {} Fortified {:2} NX Heap: {} \
-            NX Stack: {} PIE: {} Restrict: {} RPath: {} Symbols: {} ASan: {}",
+            NX Stack: {} PIE: {} Restrict: {} ASan: {} RPath: {} Symbols: {}",
             self.architecture,
             self.bitness,
             self.endianness,
@@ -119,9 +119,9 @@ impl fmt::Display for CheckSecResults {
             self.nx_stack,
             self.pie,
             self.restrict,
+            self.asan,
             self.rpath,
             self.symbol_count,
-            self.asan
         )
     }
     #[cfg(feature = "color")]
@@ -159,12 +159,12 @@ impl fmt::Display for CheckSecResults {
             colorize_bool!(self.pie),
             "Restrict:".bold(),
             colorize_bool!(self.restrict),
+            "ASan".bold(),
+            colorize_bool!(!self.asan),
             "RPath:".bold(),
             self.rpath,
             "Symbols".bold(),
             self.symbol_count,
-            "ASan".bold(),
-            colorize_bool!(!self.asan),
         )
     }
 }

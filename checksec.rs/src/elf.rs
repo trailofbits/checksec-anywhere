@@ -223,6 +223,10 @@ pub struct CheckSecResults {
     pub pie: PIE,
     /// Relocation Read-Only
     pub relro: Relro,
+    // contains asan instrumentation
+    pub asan: bool,
+    // When disabled, ELF tends to combine program headers with the executable text section
+    pub seperate_code: bool,
     /// Run-time search path (`DT_RPATH`)
     pub rpath: VecRpath,
     /// Run-time search path (`DT_RUNTIME`)
@@ -231,9 +235,8 @@ pub struct CheckSecResults {
     pub dynlibs: Vec<String>,
     // number of symbols
     pub symbol_count: usize,
-    // contains asan instrumentation
-    pub asan: bool,
 }
+
 impl CheckSecResults {
     #[must_use]
     pub fn parse(elf: &Elf, bytes: &[u8]) -> Self {
@@ -261,6 +264,8 @@ impl CheckSecResults {
             nx: elf.has_nx(),
             pie: elf.has_pie(),
             relro: elf.has_relro(),
+            asan: elf.has_asan(),
+            seperate_code: elf.has_seperate_code(),
             rpath: elf.has_rpath(),
             runpath: elf.has_runpath(),
             dynlibs: elf
@@ -269,7 +274,6 @@ impl CheckSecResults {
                 .map(std::string::ToString::to_string)
                 .collect(),
             symbol_count: elf.symbol_count(),
-            asan: elf.has_asan(),
         }
     }
 }
@@ -282,7 +286,7 @@ impl fmt::Display for CheckSecResults {
             f,
             "Architecture: {} Bitness: {} Endianness: {} Dynamic Linking: {} Interpreter: {} \
             Canary: {} CFI: {} SafeStack: {} StackClash: {} Fortify: {} Fortified: {:2} \
-            Fortifiable: {:2} NX: {} PIE: {} Relro: {} RPATH: {} RUNPATH: {} Symbols: {} ASan: {}",
+            Fortifiable: {:2} NX: {} PIE: {} Relro: {} ASan: {} Seperate Code: {} RPATH: {} RUNPATH: {} Symbols: {}",
             self.architecture,
             self.bitness,
             self.endianness,
@@ -298,10 +302,11 @@ impl fmt::Display for CheckSecResults {
             self.nx,
             self.pie,
             self.relro,
+            self.asan,
+            self.seperate_code,
             self.rpath,
             self.runpath,
             self.symbols,
-            self.asan,
         )
     }
     #[cfg(feature = "color")]
@@ -309,7 +314,7 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
+            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
             "Architecture:".bold(),
             self.architecture,
             "Bitness:".bold(),
@@ -340,14 +345,16 @@ impl fmt::Display for CheckSecResults {
             self.pie,
             "Relro:".bold(),
             self.relro,
+            "ASan".bold(),
+            colorize_bool!(!self.asan),
+            "Seperate Code".bold(),
+            colorize_bool!(self.seperate_code),
             "RPATH:".bold(),
             self.rpath,
             "RUNPATH:".bold(),
             self.runpath,
             "Symbols".bold(),
             self.symbol_count,
-            "ASan".bold(),
-            colorize_bool!(!self.asan),
         )
     }
 }
@@ -404,6 +411,8 @@ pub trait Properties {
     fn symbol_count(&self) -> usize;
     // return if the binary contains asan symbols (i.e., contains asan instrumentation)
     fn has_asan(&self) -> bool;
+    // Check if the program headers are combined with the text section, resulting in 
+    fn has_seperate_code(&self) -> bool;
 }
 
 // readelf -s -W /lib/x86_64-linux-gnu/libc.so.6 | grep _chk
@@ -694,6 +703,16 @@ impl Properties for Elf<'_> {
         self.dynsyms.iter().any(|dynsym| match self.dynstrtab.get_at(dynsym.st_name){
             Some(sym_name) => {sym_name == "__asan_init"},
             _ => false
+        })
+    }
+    fn has_seperate_code(&self) -> bool {
+        // RX permissions at offset 0 indicates combined segments, since offset 0 contains 
+        // ELF headers, not .text code
+        !self.program_headers.iter().any(|header| {
+            println!("{:?}", header);
+            println!("{}", header.is_executable());
+            println!("{}", header.is_read());
+            header.p_offset == 0 && header.is_executable() && header.is_read()
         })
     }
 }

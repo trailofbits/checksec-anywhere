@@ -160,7 +160,8 @@ export function formatSecurityName(key) {
         'bitness': 'Bitness',
         'endianness': 'Endianness',
         'dyn_linking': 'Dynamic Linking',
-        'interpreter': "Interpreter Path",
+        'interpreter': 'Interpreter Path',
+        'seperate_code': 'Code/Data Separation',
     };
     
     return nameMap[key];

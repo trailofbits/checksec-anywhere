@@ -373,3 +373,23 @@ fn test_interpreter_path(){
         _ => {panic!("Checksec failed")},
     }
 }
+
+#[test]
+fn test_seperate_code_on(){
+    let filename = "./tests/binaries/elf/seperate_code_enabled".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::Elf(elf_result) => {assert_eq!(elf_result.seperate_code, true)},
+        _ => {panic!("Checksec failed")},
+    }
+}
+
+#[test]
+fn test_seperate_code_off(){
+    let filename = "./tests/binaries/elf/seperate_code_disabled".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::Elf(elf_result) => {assert_eq!(elf_result.seperate_code, false)},
+        _ => {panic!("Checksec failed")},
+    }
+}

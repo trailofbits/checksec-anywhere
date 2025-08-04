@@ -258,6 +258,16 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
                 true => sarif::ResultLevel::Warning 
             })
             .build(),
+            sarif::Result::builder()
+            .rule_id("seperate_code".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Executable code seperate from ELF header data: {}", elf_result.seperate_code))
+                .build())
+            .level(match elf_result.seperate_code { 
+                false => sarif::ResultLevel::Warning, 
+                true => sarif::ResultLevel::None 
+            })
+            .build(),
     ]
 }
 
