@@ -76,7 +76,42 @@ fn build_sarif_for_checksec(runs: Vec<sarif::Run>) -> serde_json::Result<String>
 #[allow(clippy::too_many_lines)]
 fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
     vec![
-        sarif::Result::builder()
+            sarif::Result::builder()
+            .rule_id("architecture".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Target Architecture: {}", elf_result.architecture))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("bitness".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Bitness: {}", elf_result.bitness))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("endianness".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Endianness: {}", elf_result.endianness))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("dyn_linking".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Dynamic Linking: {}", elf_result.dyn_linking))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("interpreter".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Interpreter Path: {}", elf_result.interpreter))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
             .rule_id("canary".to_string())
             .message(sarif::Message::builder()
                 .text(format!("Stack Canary enabled: {}", elf_result.canary))
@@ -214,13 +249,6 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
             .level(sarif::ResultLevel::Note)
             .build(),
             sarif::Result::builder()
-            .rule_id("bitness".to_string())
-            .message(sarif::Message::builder()
-                .text(format!("Bitness: {}", elf_result.bitness))
-                .build())
-            .level(sarif::ResultLevel::Note)
-            .build(),
-            sarif::Result::builder()
             .rule_id("ASan".to_string())
             .message(sarif::Message::builder()
                 .text(format!("Address Sanitizer Instrumentation: {}", elf_result.asan))
@@ -237,6 +265,34 @@ fn create_elf_results(elf_result: &elf::CheckSecResults) -> Vec<sarif::Result> {
 #[allow(clippy::too_many_lines)]
 fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
     vec![
+            sarif::Result::builder()
+            .rule_id("architecture".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Target Architecture: {}", pe_result.architecture))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("bitness".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Bitness: {}", pe_result.bitness))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("endianness".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Endianness: {}", pe_result.endianness))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("dyn_linking".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Dynamic Linking: {}", pe_result.dyn_linking))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
             sarif::Result::builder()
             .rule_id("aslr".to_string())
             .message(sarif::Message::builder()
@@ -320,18 +376,6 @@ fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
                 })
             .build(),
             sarif::Result::builder()
-            .rule_id("GS".to_string())
-            .message(sarif::Message::builder()
-                .text(format!("Security Cookie/Stack Canary: {}", pe_result.gs))
-                .build())
-            .level(if pe_result.gs {
-                    sarif::ResultLevel::None
-                }
-                else{
-                    sarif::ResultLevel::Warning
-                })
-            .build(),
-            sarif::Result::builder()
             .rule_id("isolation".to_string())
             .message(sarif::Message::builder()
                 .text(format!("Allow isolation: {}", pe_result.gs))
@@ -392,13 +436,6 @@ fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
                 })
             .build(),
             sarif::Result::builder()
-            .rule_id("bitness".to_string())
-            .message(sarif::Message::builder()
-            .text(format!("Bitness: {}", pe_result.bitness))
-            .build())
-            .level(sarif::ResultLevel::Note)
-            .build(),
-            sarif::Result::builder()
             .rule_id("ASan".to_string())
             .message(sarif::Message::builder()
                 .text(format!("Address Sanitizer Instrumentation: {}", pe_result.asan))
@@ -423,6 +460,34 @@ fn create_pe_results(pe_result: &pe::CheckSecResults) -> Vec<sarif::Result> {
 fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Result> {
     vec![
             sarif::Result::builder()
+            .rule_id("architecture".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Target Architecture: {}", macho_result.architecture))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("bitness".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Bitness: {}", macho_result.bitness))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("endianness".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Endianness: {}", macho_result.endianness))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
+            .rule_id("dyn_linking".to_string())
+            .message(sarif::Message::builder()
+                .text(format!("Dynamic Linking: {}", macho_result.dyn_linking))
+                .build())
+            .level(sarif::ResultLevel::Note)
+            .build(),
+            sarif::Result::builder()
             .rule_id("arc".to_string())
             .message(sarif::Message::builder()
                 .text(format!("Automatic Reference Counting: {}", macho_result.arc))
@@ -433,13 +498,6 @@ fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Res
                 else{
                     sarif::ResultLevel::Warning
                 })
-            .build(),
-            sarif::Result::builder()
-            .rule_id("architecture".to_string())
-            .message(sarif::Message::builder()
-                .text(format!("Target Architecture: {}", macho_result.architecture))
-                .build())
-            .level(sarif::ResultLevel::Note)
             .build(),
             sarif::Result::builder()
             .rule_id("canary".to_string())
@@ -538,13 +596,6 @@ fn create_macho_results(macho_result: &macho::CheckSecResults) -> Vec<sarif::Res
                 .text(format!("Runtime path: {}", macho_result.rpath))
                 .build())
             .level(check_rpath(&macho_result.rpath))
-            .build(),
-            sarif::Result::builder()
-            .rule_id("bitness".to_string())
-            .message(sarif::Message::builder()
-                .text(format!("Bitness: {}", macho_result.bitness))
-                .build())
-            .level(sarif::ResultLevel::Note)
             .build(),
             sarif::Result::builder()
             .rule_id("ASan".to_string())

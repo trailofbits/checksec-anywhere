@@ -363,3 +363,13 @@ fn test_statically_linked(){
         _ => {panic!("Checksec failed")},
     }
 }
+
+#[test]
+fn test_interpreter_path(){
+    let filename = "./tests/binaries/elf/all".into();
+    let buf = file_to_buf(&filename);
+    match &checksec(&buf, filename).blobs[0].properties {
+        BinSpecificProperties::Elf(elf_result) => {assert_eq!(elf_result.interpreter, "/lib64/ld-linux-x86-64.so.2".to_string())},
+        _ => {panic!("Checksec failed")},
+    }
+}

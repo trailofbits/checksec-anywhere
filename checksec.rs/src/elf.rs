@@ -201,6 +201,8 @@ pub struct CheckSecResults {
     pub endianness: Endianness,
     // describes if the binary is dynamically linked
     pub dyn_linking: bool,
+    // Interpreter
+    pub interpreter: String,
     /// Stack Canary (*CFLAGS=*`-fstack-protector*`)
     pub canary: bool,
     /// Clang Control Flow Integrity (*CFLAGS=*`-fsanitize=cfi-*`)
@@ -248,6 +250,7 @@ impl CheckSecResults {
             bitness: if elf.is_64 { 64 } else { 32 },
             endianness: if elf.little_endian {Endianness::Little} else {Endianness::Big},
             dyn_linking: elf.dynamic.is_some(),
+            interpreter: match elf.interpreter{Some(path) => path.to_string(), None => "Unknown".into()},
             canary: elf.has_canary(),
             clang_cfi: elf.has_clang_cfi(),
             clang_safestack: elf.has_clang_safestack(),
@@ -277,12 +280,14 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Architecture: {} Bitness: {} Endianness: {} Dynamic Linking: {} Canary: {} CFI: {} SafeStack: {} StackClash: {} Fortify: {} Fortified: {:2} \
+            "Architecture: {} Bitness: {} Endianness: {} Dynamic Linking: {} Interpreter: {} \
+            Canary: {} CFI: {} SafeStack: {} StackClash: {} Fortify: {} Fortified: {:2} \
             Fortifiable: {:2} NX: {} PIE: {} Relro: {} RPATH: {} RUNPATH: {} Symbols: {} ASan: {}",
             self.architecture,
             self.bitness,
             self.endianness,
             self.dyn_linking,
+            self.interpreter,
             self.canary,
             self.clang_cfi,
             self.clang_safestack,
@@ -304,7 +309,7 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
+            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
             "Architecture:".bold(),
             self.architecture,
             "Bitness:".bold(),
@@ -313,6 +318,8 @@ impl fmt::Display for CheckSecResults {
             self.endianness,
             "Dynamic Linking:".bold(),
             self.dyn_linking,
+            "Interpreter:".bold(),
+            self.interpreter,
             "Canary:".bold(),
             colorize_bool!(self.canary),
             "CFI:".bold(),
