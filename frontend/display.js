@@ -41,6 +41,16 @@ export function displayFileHeader(binaryType, filename, container) {
     headerElement.textContent = `${binary_str} Security Analysis - ${filename}`;
     container.appendChild(headerElement);
     
+    // Create information section header
+    const infoHeader = document.createElement("h3");
+    infoHeader.className = "section-header";
+    infoHeader.textContent = "File Information";
+    container.appendChild(infoHeader);
+    
+    // Create information list container
+    const infoList = document.createElement("ul");
+    infoList.className = "security-list";
+    
     const fileTypeItem = document.createElement("li");
     fileTypeItem.className = "security-item";
     fileTypeItem.innerHTML = `
@@ -49,30 +59,74 @@ export function displayFileHeader(binaryType, filename, container) {
             <span class="security-value info">${binary_str}</span>
         </div>
     `;
-    container.appendChild(fileTypeItem);
+    infoList.appendChild(fileTypeItem);
+    container.appendChild(infoList);
     return binary_str;
 }
 
 export function displayFileRow(filename, container) {
-    const filenameItem = document.createElement("li");
-    filenameItem.className = "security-item";
-    filenameItem.innerHTML = `
-        <div class="security-item-main">
-            <span class="security-name">Filename</span>
-            <span class="security-value info"></span>
-        </div>
-    `;
-    filenameItem.querySelector(".security-value").textContent = filename;
-    container.appendChild(filenameItem);
+    // Find the existing info list (created in displayFileHeader)
+    const infoList = container.querySelector('.security-list');
+    if (infoList) {
+        const filenameItem = document.createElement("li");
+        filenameItem.className = "security-item";
+        filenameItem.innerHTML = `
+            <div class="security-item-main">
+                <span class="security-name">Filename</span>
+                <span class="security-value info">${filename}</span>
+            </div>
+        `;
+        infoList.appendChild(filenameItem);
+    }
 }
 
 export function displayBinaryData(binaryData, container) {
     // Check if dynamic linking is enabled
     const isDynamicLinkingEnabled = binaryData.dyn_linking === true;
     
+    // Define binary info fields
+    const binaryInfoFields = ['architecture', 'bitness', 'endianness'];
+    
+    // Add binary info fields to the information section
+    const infoList = container.querySelector('.security-list');
+    if (infoList) {
+        binaryInfoFields.forEach(field => {
+            if (binaryData[field] !== undefined) {
+                const item = document.createElement("li");
+                item.className = "security-item";
+                
+                const formattedName = formatSecurityName(field);
+                const formattedValue = formatSecurityValue(field, binaryData[field]);
+                
+                item.innerHTML = `
+                    <div class="security-item-main">
+                        <span class="security-name">${formattedName}</span>
+                        <span class="security-value info">${formattedValue}</span>
+                    </div>
+                `;
+                infoList.appendChild(item);
+            }
+        });
+    }
+    
+    // Create security section header
+    const securityHeader = document.createElement("h3");
+    securityHeader.className = "section-header";
+    securityHeader.textContent = "Security Properties";
+    container.appendChild(securityHeader);
+    
+    // Create security list container
+    const securityList = document.createElement("ul");
+    securityList.className = "security-list";
+    
     for (const [key, value] of Object.entries(binaryData)) {
+        // Skip info fields (they're displayed in the info section)
+        if (['filename', 'dyn_linking', 'endianness', 'bitness', 'architecture'].includes(key)) {
+            continue;
+        }
+        
         // Skip dynamic libraries row entirely if dynamic linking is disabled
-        if (key === 'dynlibs' && !isDynamicLinkingEnabled) {
+        if ((key === 'dynlibs' || key === "interpreter") && !isDynamicLinkingEnabled) {
             continue;
         }
         
@@ -104,8 +158,10 @@ export function displayBinaryData(binaryData, container) {
             addDynLibDetails(item, value);
         }
         
-        container.appendChild(item);
+        securityList.appendChild(item);
     }
+    
+    container.appendChild(securityList);
 }
 
 export function displayShareFunctionality(blob, filename, version, container) {

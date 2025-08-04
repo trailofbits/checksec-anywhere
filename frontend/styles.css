@@ -135,6 +135,27 @@ body {
     border-bottom: none;
 }
 
+/* Section headers for organizing content */
+.section-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #f0f6fc;
+    margin: 24px 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #30363d;
+}
+
+.section-header:first-child {
+    margin-top: 0;
+}
+
+/* Spacing between sections */
+.section-divider {
+    height: 1px;
+    background: #21262d;
+    margin: 16px 0;
+}
+
 .security-name {
     font-weight: 500;
     color: #e6edf3;
