@@ -1,4 +1,4 @@
-# Checksec Anywhere: Building Checksec Without Boundaries
+# 🛡️ Checksec Anywhere: Building Checksec Without Boundaries
 
 Checksec Anywhere enables quick, seamless binary security analysis for your ELF, PE, and MACH-O files.
 Accessible from the browser, it cuts out unnecessary dependencies and maintenance from your checksec toolkit! 
