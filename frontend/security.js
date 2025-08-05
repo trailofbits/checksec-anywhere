@@ -94,7 +94,7 @@ export function getSecurityClass(key, value) {
 
 export function formatSecurityValue(key, value) {
     if (typeof value === 'boolean') {
-        return value ? 'enabled' : 'disabled';
+        return value ? 'Enabled' : 'Disabled';
     }
     
     if (key === 'rpath' || key === 'runpath') {

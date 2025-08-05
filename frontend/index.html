@@ -9,8 +9,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>Checksec Anywhere</h1>
-        <p class="subtitle">Analyze binary security features in your browser</p>
+        <div class="title-section">
+            <h1>Checksec Anywhere</h1>
+            <p class="subtitle">Analyze binary security features in your browser</p>
+        </div>
         
         <div class="input-section">
             <div class="input-container">
@@ -56,8 +58,25 @@
     </div>
 
     <footer class="footer">
-    <p class="disclaimer">All file processing happens in your browser, we never see, store, or transmit files.</p>
-    <p>Check out the <a href="https://github.com/trailofbits/checksec-anywhere" target="_blank" rel="noopener noreferrer">source code</a>!</p>
+        <div class="footer-content">
+            <div class="footer-info">
+                <div class="info-section">
+                    <div class="info-header">
+                        <span class="info-icon">🔒</span>
+                        <span class="info-title">Privacy First</span>
+                    </div>
+                    <p>All file processing happens in your browser, we never see, store, or transmit files.</p>
+                </div>
+                <div class="info-section">
+                    <div class="info-header">
+                        <span class="info-icon">🛡️</span>
+                        <span class="info-title">Security & Disassembly</span>
+                    </div>
+                    <p>Security checks: <strong>ELF</strong> • <strong>PE</strong> • <strong>Mach-O</strong><br>Disassembly: <strong>x86_64</strong></p>
+                </div>
+            </div>
+            <p class="source-link">Check out the <a href="https://github.com/trailofbits/checksec-anywhere" target="_blank" rel="noopener noreferrer">source code</a>!</p>
+        </div>
     </footer>
     <script type="module" src="app.js"></script>
 </body>
