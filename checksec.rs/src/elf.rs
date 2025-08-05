@@ -265,7 +265,7 @@ impl CheckSecResults {
             pie: elf.has_pie(),
             relro: elf.has_relro(),
             asan: elf.has_asan(),
-            seperate_code: elf.has_seperate_code(),
+            seperate_code: elf.has_seperate_code_section(),
             rpath: elf.has_rpath(),
             runpath: elf.has_runpath(),
             dynlibs: elf
@@ -412,7 +412,7 @@ pub trait Properties {
     // return if the binary contains asan symbols (i.e., contains asan instrumentation)
     fn has_asan(&self) -> bool;
     // Check if the program headers are combined with the text section, resulting in 
-    fn has_seperate_code(&self) -> bool;
+    fn has_seperate_code_section(&self) -> bool;
 }
 
 // readelf -s -W /lib/x86_64-linux-gnu/libc.so.6 | grep _chk
@@ -705,13 +705,9 @@ impl Properties for Elf<'_> {
             _ => false
         })
     }
-    fn has_seperate_code(&self) -> bool {
-        // RX permissions at offset 0 indicates combined segments, since offset 0 contains 
-        // ELF headers, not .text code
+    fn has_seperate_code_section(&self) -> bool {
+        // RX permissions at offset 0 indicates combined segments, since offset 0 contains ELF header info, not .text code
         !self.program_headers.iter().any(|header| {
-            println!("{:?}", header);
-            println!("{}", header.is_executable());
-            println!("{}", header.is_read());
             header.p_offset == 0 && header.is_executable() && header.is_read()
         })
     }
