@@ -12,17 +12,17 @@ Analyze binary security features instantly in your browser. No downloads, no upl
 2. Drag and drop your binary file
 3. Get comprehensive security analysis instantly
 
-<!-- TODO: Add animated GIF showing drag-and-drop functionality -->
+TODO: Add animated GIF showing drag-and-drop functionality
 
 ## Features
 
-✅ **Multiple Formats** - ELF, PE, and Mach-O from a single interface 
-✅ **No installation required** - Runs locally in your browser using WASM 
-✅ **Comprehensive Reports** - All of the properties you're used to seeing and more 
-✅ **Batch processing** - Drag and drop entire directories  
-✅ **Shareable results** - Generate static URLs for any report 
-✅ **Tabbed interface** - Manage multiple analyses simultaneously with an intuitive UI 
-✅ **SARIF export** - Download reports in industry-standard format
+ - ✅ **Multiple Formats** - ELF, PE, and Mach-O from a single interface 
+- ✅ **No installation required** - Runs locally in your browser using WASM 
+- ✅ **Comprehensive Reports** - All of the properties you're used to seeing and more 
+- ✅ **Batch processing** - Drag and drop entire directories  
+- ✅ **Shareable results** - Generate static URLs for any report 
+- ✅ **Tabbed interface** - Manage multiple analyses simultaneously with an intuitive UI 
+- ✅ **SARIF export** - Download reports in industry-standard format
 
 ## Performance
 
