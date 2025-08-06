@@ -12,7 +12,7 @@ Analyze binary security features instantly in your browser. No downloads, no upl
 2. Drag and drop your binary file
 3. Get comprehensive security analysis instantly
 
-TODO: Add animated GIF showing drag-and-drop functionality
+![Usage](./assets/checksec.gif)
 
 ## Features
 
