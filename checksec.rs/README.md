@@ -1,6 +1,20 @@
-![checksec.rs](./resources/checksec.svg)
+> **Note**: This is a modified version of checksec.rs v0.0.9.  
+> Original project: https://github.com/etke/checksec.rs  
+> 
+> **Modifications include**:
+> - WebAssembly bindings for browser compatibility
+> - SARIF export functionality  
+> - Enhanced security checks and bug fixes
+> - Compression utilities for shareable URLs
+> - Additional test coverage
+>
+> See the full checksec-anywhere [README](../README.md) for details.
 
-[![crates.io](https://img.shields.io/crates/v/checksec.svg)](https://crates.io/crates/checksec) [![docs.rs](https://docs.rs/checksec/badge.svg)](https://docs.rs/checksec) [![github-actions](https://github.com/etke/checksec.rs/workflows/github%20actions/badge.svg?branch=master)](https://github.com/etke/checksec.rs/actions)
+---
+
+# Original checksec.rs README
+
+![checksec.rs](./resources/checksec.svg)
 
 Fast multi-platform (ELF/PE/MachO) binary checksec written in Rust.
 
