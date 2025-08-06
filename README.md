@@ -1,18 +1,31 @@
 # 🛡️ Checksec Anywhere: Building Checksec Without Boundaries
 
-Checksec Anywhere enables quick, seamless binary security analysis for your ELF, PE, and MACH-O files.
-Accessible from the browser, it cuts out unnecessary dependencies and maintenance from your checksec toolkit! 
+Analyze binary security features instantly in your browser. No downloads, no uploads, no accounts.
 
-Check it out at [https://trailofbits.github.io/checksec-anywhere](https://trailofbits.github.io/checksec-anywhere).
+**[Try it now](https://trailofbits.github.io/checksec-anywhere)**
+
+> **Your files never leave your browser** - Critical for proprietary software, security-sensitive applications, and compliance-restricted code
+
+## Get Started in 30 seconds
+
+1. Open [https://trailofbits.github.io/checksec-anywhere](https://trailofbits.github.io/checksec-anywhere) in your browser
+2. Drag and drop your binary file
+3. Get comprehensive security analysis instantly
+
+<!-- TODO: Add animated GIF showing drag-and-drop functionality -->
 
 ## Features
-### Multiple Formats
-  ELF, PE, and single or multi-architecture Mach-O binaries from a single interface.
-### Privacy
-  Critical for proprietary software, security-sensitive applications, and compliance-restricted code, Checksec Anywhere ensures your binaries never leave your machine by processing everything locally in the browser.
-### Comprehensive Reports
-  All of the properties you're used to seeing and more.
-### Speed
+
+✅ **Multiple Formats** - ELF, PE, and Mach-O from a single interface 
+✅ **No installation required** - Runs locally in your browser using WASM 
+✅ **Comprehensive Reports** - All of the properties you're used to seeing and more 
+✅ **Batch processing** - Drag and drop entire directories  
+✅ **Shareable results** - Generate static URLs for any report 
+✅ **Tabbed interface** - Manage multiple analyses simultaneously with an intuitive UI 
+✅ **SARIF export** - Download reports in industry-standard format
+
+## Performance
+
 Analysis performance for 699 files in `/usr/bin`:
   | Tool | Processing Time |
 |----------|----------|
@@ -20,19 +33,14 @@ Analysis performance for 699 files in `/usr/bin`:
 | checksec (go) | 0.804s |
 | Checksec Anywhere (browser) | 2.777s |
 
-### Accessibility
-- Shareable Results: Generate static URLs for any report view
-- SARIF Export: Download reports in SARIF format
-- Batch Processing: Drag and drop entire directories for bulk analysis
-- Tabbed Interface: Manage multiple analyses simultaneously with an intuitive UI
-
 ## Technical Details
-The core of Checksec Anywhere is built on [checksec.rs](https://crates.io/crates/checksec). Key additions include:
-- `lib.rs`: A unified library interface for checksec functionality
-- `web_bindings.rs`: WebAssembly bindings to expose checksec functionality to the browser
-- `sarif.rs`: Convert checksec reports to the SARIF outputs
-- `compression.rs`: Compress and encode reports to generate static URLs
-- Bug fixes and tests: Extensive unit tests and test files in `/tests`
+The core of Checksec Anywhere is built on [checksec.rs](https://crates.io/crates/checksec). 
+
+Key additions include:
+- A unified library interface for checksec functionality
+- WebAssembly bindings to expose checksec functionality to the browser
+- SARIF output
+- Compress and encode reports into static shareable URLs
 - Additional functionality and checks
   - Fine-grained disassembly for GS detection in PE binaries.
   - Checks for mixing of data and code in ELF program headers.
