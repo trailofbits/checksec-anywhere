@@ -1,11 +1,11 @@
 //! Implements checksec for `MachO` binaries
+use crate::shared::{Endianness, Rpath, VecRpath};
 #[cfg(feature = "color")]
 use colored::Colorize;
-use goblin::mach::load_command::CommandVariant;
 use goblin::mach::constants::cputype::get_arch_name_from_types;
+use goblin::mach::load_command::CommandVariant;
 use goblin::mach::MachO;
 use serde::{Deserialize, Serialize};
-use crate::shared::{Rpath, VecRpath, Endianness};
 use std::fmt;
 
 #[cfg(feature = "color")]
@@ -77,8 +77,12 @@ impl CheckSecResults {
         Self {
             architecture: macho.get_architecture(),
             bitness: if macho.is_64 { 64 } else { 32 },
-            endianness: if macho.little_endian {Endianness::Little} else {Endianness::Big},
-            dyn_linking: macho.libs.len() > 0,
+            endianness: if macho.little_endian {
+                Endianness::Little
+            } else {
+                Endianness::Big
+            },
+            dyn_linking: !macho.libs.is_empty(),
             arc: macho.has_arc(),
             canary: macho.has_canary(),
             code_signature: macho.has_code_signature(),
@@ -222,19 +226,22 @@ pub trait Properties {
 impl Properties for MachO<'_> {
     fn has_arc(&self) -> bool {
         self.symbols()
-        .flatten()
-        .any(|(name, _)| name == "_objc_release" || name == "_objc_alloc")
+            .flatten()
+            .any(|(name, _)| name == "_objc_release" || name == "_objc_alloc")
     }
     fn get_architecture(&self) -> String {
-        match get_arch_name_from_types(self.header.cputype(), self.header.cpusubtype()) {
+        match get_arch_name_from_types(
+            self.header.cputype(),
+            self.header.cpusubtype(),
+        ) {
             Some(arch) => arch.to_string(),
-            None => "Unknown".to_string()
+            None => "Unknown".to_string(),
         }
     }
     fn has_canary(&self) -> bool {
-        self.symbols()
-        .flatten()
-        .any(|(name, _)| name == "___stack_chk_fail" || name == "___stack_chk_guard")
+        self.symbols().flatten().any(|(name, _)| {
+            name == "___stack_chk_fail" || name == "___stack_chk_guard"
+        })
     }
     fn has_code_signature(&self) -> bool {
         for loadcmd in &self.load_commands {
@@ -306,7 +313,7 @@ impl Properties for MachO<'_> {
         for &rpath in &self.rpaths {
             paths.push(Rpath::Yes(rpath.into()));
         }
-        if paths.is_empty(){
+        if paths.is_empty() {
             return VecRpath::new(vec![Rpath::None]);
         }
         VecRpath::new(paths)
@@ -314,12 +321,8 @@ impl Properties for MachO<'_> {
     fn symbol_count(&self) -> usize {
         self.symbols().flatten().count()
     }
-    fn has_asan(&self) -> bool{
+    fn has_asan(&self) -> bool {
         // check for asan initialization prologue. Apple adds an additional underscore in front of C symbols to differentiate from asm symbols.
-        self.symbols()
-            .flatten()
-            .any(|(name, _)| {
-                name == "___asan_init"
-        })
+        self.symbols().flatten().any(|(name, _)| name == "___asan_init")
     }
 }

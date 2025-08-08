@@ -1,8 +1,8 @@
 #[cfg(feature = "color")]
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::path::PathBuf;
-use std::{fmt};
 
 #[cfg(feature = "elf")]
 use crate::elf;
@@ -43,7 +43,7 @@ impl fmt::Display for BinType {
             Self::MachO32 => write!(f, "MachO32"),
             #[cfg(feature = "macho")]
             Self::MachO64 => write!(f, "MachO64"),
-            Self::Error => write!(f, "Error")
+            Self::Error => write!(f, "Error"),
         }
     }
 }
@@ -99,6 +99,7 @@ pub struct Blob {
 }
 
 impl Blob {
+    #[must_use]
     pub fn new(
         binarytype: BinType,
         properties: BinSpecificProperties,
@@ -115,6 +116,7 @@ pub struct Binary {
 }
 
 impl Binary {
+    #[must_use]
     pub fn new(file: PathBuf, blobs: Vec<Blob>) -> Self {
         Self { file, blobs, libraries: vec![] }
     }

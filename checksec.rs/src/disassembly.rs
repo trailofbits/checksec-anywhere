@@ -33,53 +33,72 @@ enum SCPSteps {
     EndCmp,
 }
 
-fn check_is_canary_prologue(instrs: &AllocRingBuffer<Instruction>, bitness: Bitness, cookie_address: u64) -> u64{
+fn check_is_canary_prologue(
+    instrs: &AllocRingBuffer<Instruction>,
+    bitness: Bitness,
+    cookie_address: u64,
+) -> u64 {
     let i0 = instrs[0];
     let i1 = instrs[1];
     let i2 = instrs[2];
     if !(i0.mnemonic() == Mnemonic::Mov                 // mov rax,[<addr>] -- moving security cookie into *ax
-        && i0.op1_kind() == OpKind::Memory 
-        && is_ax_reg(i0.op0_register(), bitness) 
-        && get_memory_displacement(&i0, bitness) == cookie_address) {
+        && i0.op1_kind() == OpKind::Memory
+        && is_ax_reg(i0.op0_register(), bitness)
+        && get_memory_displacement(&i0, bitness) == cookie_address)
+    {
         return 0;
     }
     if !(i1.mnemonic() == Mnemonic::Xor                 //xor rax, rsp -- xor security cookie with stack pointer
-        && is_ax_reg(i1.op0_register(), bitness) 
-        && is_sp_or_bp_reg(i1.op1_register(), bitness)){
-        return 0
+        && is_ax_reg(i1.op0_register(), bitness)
+        && is_sp_or_bp_reg(i1.op1_register(), bitness))
+    {
+        return 0;
     }
     if i2.mnemonic() == Mnemonic::Mov                   //mov [rsp+30h],rax -- load xor'd value into some offset of stack pointer
-        && i2.op0_kind() == OpKind::Memory 
-        && is_ax_reg(i2.op1_register(), bitness) 
-        && is_sp_or_bp_reg(i2.memory_base(), bitness){
+        && i2.op0_kind() == OpKind::Memory
+        && is_ax_reg(i2.op1_register(), bitness)
+        && is_sp_or_bp_reg(i2.memory_base(), bitness)
+    {
         return get_memory_displacement(&i2, bitness);
     }
     0
 }
 
-fn check_is_canary_epilogue(instrs: &AllocRingBuffer<Instruction>, bitness: Bitness, xored_cookie_offset: u64) -> bool{
+fn check_is_canary_epilogue(
+    instrs: &AllocRingBuffer<Instruction>,
+    bitness: Bitness,
+    xored_cookie_offset: u64,
+) -> bool {
     let i0 = instrs[0];
     let i1 = instrs[1];
     let i2 = instrs[2];
-    if !(i0.mnemonic() == Mnemonic::Mov                 // mov rcx,[<addr>] -- moving xor'd security cookie into rcx
-        && i0.op1_kind() == OpKind::Memory 
-        && is_cx_reg(i0.op0_register(), bitness) 
-        && get_memory_displacement(&i0, bitness) == xored_cookie_offset) {
+    if !(i0.mnemonic() == Mnemonic::Mov               // mov rcx,[<addr>] -- moving xor'd security cookie into rcx
+        && i0.op1_kind() == OpKind::Memory
+        && is_cx_reg(i0.op0_register(), bitness)
+        && get_memory_displacement(&i0, bitness) == xored_cookie_offset)
+    {
         return false;
     }
     if !(i1.mnemonic() == Mnemonic::Xor                 //xor rcx, rsp -- xor stored security cookie with stack pointer again (rax and rcx should hold same value)
-        && is_cx_reg(i1.op0_register(), bitness) 
-        && is_sp_or_bp_reg(i1.op1_register(), bitness)){
+        && is_cx_reg(i1.op0_register(), bitness)
+        && is_sp_or_bp_reg(i1.op1_register(), bitness))
+    {
         return false;
     }
-    i2.mnemonic() == Mnemonic::Call                     // calling __security_check_cookie
+    i2.mnemonic() == Mnemonic::Call // calling __security_check_cookie
 }
 
 /// [COOKIE DETAILS] (<https://www.cyberark.com/resources/threat-research-blog/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows>)
 #[cfg(feature = "disassembly")]
 #[must_use]
-pub fn function_has_ge(bytes: &[u8], bitness: Bitness, rip: u64, cookie_address: u64) -> bool{
-    let mut decoder = Decoder::with_ip(bitness.as_u32(), bytes, rip, DecoderOptions::NONE);
+pub fn function_has_ge(
+    bytes: &[u8],
+    bitness: Bitness,
+    rip: u64,
+    cookie_address: u64,
+) -> bool {
+    let mut decoder =
+        Decoder::with_ip(bitness.as_u32(), bytes, rip, DecoderOptions::NONE);
 
     let mut instr = Instruction::default();
     let mut stack_cookie_invokations = 0;
@@ -103,16 +122,25 @@ pub fn function_has_ge(bytes: &[u8], bitness: Bitness, rip: u64, cookie_address:
         decoder.decode_out(&mut instr);
         instruction_window.push(instr);
         if xored_canary_addr == 0 {
-            xored_canary_addr = check_is_canary_prologue(&instruction_window, bitness, cookie_address);
+            xored_canary_addr = check_is_canary_prologue(
+                &instruction_window,
+                bitness,
+                cookie_address,
+            );
         }
-        if xored_canary_addr > 0 && check_is_canary_epilogue(&instruction_window, bitness, xored_canary_addr) {
+        if xored_canary_addr > 0
+            && check_is_canary_epilogue(
+                &instruction_window,
+                bitness,
+                xored_canary_addr,
+            )
+        {
             stack_cookie_invokations += 1;
             xored_canary_addr = 0;
         }
     }
     stack_cookie_invokations > 0
 }
-
 
 #[cfg(feature = "disassembly")]
 #[allow(clippy::too_many_lines)]
@@ -284,8 +312,9 @@ fn is_ax_reg(reg: iced_x86::Register, bitness: Bitness) -> bool {
 
 #[cfg(feature = "disassembly")] // stack cookie is commonly xor'd with either frame pointer, or when fp is optimized out, the stack pointer.
 fn is_sp_or_bp_reg(reg: iced_x86::Register, bitness: Bitness) -> bool {
-    if bitness == Bitness::B64{
-        return reg == iced_x86::Register::RSP || reg == iced_x86::Register::RBP;
+    if bitness == Bitness::B64 {
+        return reg == iced_x86::Register::RSP
+            || reg == iced_x86::Register::RBP;
     }
     reg == iced_x86::Register::ESP || reg == iced_x86::Register::EBP
 }

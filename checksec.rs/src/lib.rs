@@ -1,8 +1,7 @@
 #![warn(clippy::pedantic)]
-use goblin::{Object};
 use goblin::mach::{Mach, MultiArch, SingleArch::Archive, SingleArch::MachO};
+use goblin::Object;
 use std::path::PathBuf;
-use infer;
 
 #[cfg(feature = "disassembly")]
 pub mod disassembly;
@@ -19,10 +18,10 @@ pub mod pe;
 #[cfg(feature = "shared")]
 #[macro_use]
 pub mod shared;
-pub mod web_bindings;
+pub mod binary;
 pub mod compression;
 pub mod sarif;
-pub mod binary;
+pub mod web_bindings;
 use binary::{BinSpecificProperties, BinType, Binary, Blob};
 
 const VERSION: &str = "0.1.0";
@@ -30,7 +29,7 @@ const VERSION: &str = "0.1.0";
 /// Analyze a binary file buffer and extract security-related results.
 ///
 /// Parses the input buffer to detect its binary format (ELF, PE, or Mach-O)
-/// and runs the appropriate security checks for that format. 
+/// and runs the appropriate security checks for that format.
 /// For multi-architecture Mach-O binaries, multiple security reports are returned.
 ///
 /// # Arguments
@@ -43,13 +42,6 @@ const VERSION: &str = "0.1.0";
 ///
 /// * `Binary` containing the parsed security check results for the
 ///   detected binary format. Upion failure, corresponding blob binary types of are of type 'error'.
-///
-/// # Errors
-///
-/// This function returns a blob containing an error in the following cases:
-/// - If the binary format is not recognized or supported (e.g., fat Mach-O binaries).
-/// - If parsing the binary buffer fails due to invalid or corrupted data.
-/// - If the binary type is unsupported by the analysis logic.
 ///
 /// # Supported formats
 ///
@@ -71,6 +63,7 @@ const VERSION: &str = "0.1.0";
 /// let binary_info = checksec(&buffer, filename);
 /// println!("Binary Info:/n{:?}", binary_info);
 /// ```
+#[must_use]
 pub fn checksec(bytes: &[u8], filename: String) -> Binary {
     Binary::new(PathBuf::from(filename), get_blob_from_buf(bytes))
 }
@@ -96,68 +89,98 @@ pub fn checksec(bytes: &[u8], filename: String) -> Binary {
 /// let blobs = get_blob_from_buf(&buffer);
 /// println!("Binary Info:/n{:?}", blobs[0]);
 /// ```
-pub fn get_blob_from_buf (buffer: &[u8]) -> Vec<Blob> {
-    match Object::parse(buffer){
+#[must_use]
+pub fn get_blob_from_buf(buffer: &[u8]) -> Vec<Blob> {
+    match Object::parse(buffer) {
         Ok(Object::Elf(elf)) => {
             let result = elf::CheckSecResults::parse(&elf, buffer);
             let bin_type =
                 if elf.is_64 { BinType::Elf64 } else { BinType::Elf32 };
             vec![Blob::new(bin_type, BinSpecificProperties::Elf(result))]
-        },
+        }
         Ok(Object::PE(pe)) => {
             let result = pe::CheckSecResults::parse(&pe, buffer);
             let bin_type =
                 if pe.is_64 { BinType::PE64 } else { BinType::PE32 };
             vec![Blob::new(bin_type, BinSpecificProperties::PE(result))]
-        },
+        }
         Ok(Object::Mach(mach)) => match mach {
             Mach::Binary(mach) => {
-                let result = macho::CheckSecResults::parse(&mach); 
-                let bin_type =
-                    if mach.is_64 { BinType::MachO64 } else { BinType::MachO32 };
+                let result = macho::CheckSecResults::parse(&mach);
+                let bin_type = if mach.is_64 {
+                    BinType::MachO64
+                } else {
+                    BinType::MachO32
+                };
                 vec![Blob::new(bin_type, BinSpecificProperties::MachO(result))]
             }
-            Mach::Fat(mach) => process_fat_mach(mach, buffer)
+            Mach::Fat(mach) => process_fat_mach(&mach, buffer),
         },
         Ok(Object::Unknown(_)) => {
-            vec![Blob::new(BinType::Error, BinSpecificProperties::Error(format!("Unsupported File Format (File Type: {})", get_file_type(buffer))))]
+            vec![Blob::new(
+                BinType::Error,
+                BinSpecificProperties::Error(format!(
+                    "Unsupported File Format (File Type: {})",
+                    get_file_type(buffer)
+                )),
+            )]
         }
-        Err(res) => vec![Blob::new(BinType::Error, BinSpecificProperties::Error(res.to_string()))],
-        _ => vec![Blob::new(BinType::Error, BinSpecificProperties::Error("unsupported file type".to_string()))]
+        Err(res) => vec![Blob::new(
+            BinType::Error,
+            BinSpecificProperties::Error(res.to_string()),
+        )],
+        _ => vec![Blob::new(
+            BinType::Error,
+            BinSpecificProperties::Error("unsupported file type".to_string()),
+        )],
     }
 }
 
 // Parse out the individual binaries/artifacts contained in a multi-architectural binary.
-fn process_fat_mach(fatmach: MultiArch, bytes: &[u8]) -> Vec<Blob> {
+fn process_fat_mach(fatmach: &MultiArch, bytes: &[u8]) -> Vec<Blob> {
     let mut blob_vec: Vec<Blob> = Vec::new();
     for (idx, fatarch) in fatmach.iter_arches().enumerate() {
         if let Ok(container) = fatmach.get(idx) {
             match container {
-                MachO(mach) => { 
+                MachO(mach) => {
                     let result = macho::CheckSecResults::parse(&mach);
-                    let bin_type =
-                        if mach.is_64 { BinType::MachO64 } else { BinType::MachO32 };
-                    blob_vec.push(Blob::new(bin_type, BinSpecificProperties::MachO(result)));
+                    let bin_type = if mach.is_64 {
+                        BinType::MachO64
+                    } else {
+                        BinType::MachO32
+                    };
+                    blob_vec.push(Blob::new(
+                        bin_type,
+                        BinSpecificProperties::MachO(result),
+                    ));
                 }
-                Archive(archive) => {
-                    match fatarch {
-                        Ok(fatarch) => {
-                            if let Some(archive_bytes) = bytes.get(
-                                fatarch.offset as usize
-                                ..(fatarch.offset + fatarch.size)
-                                as usize,
-                            ) {
-                                blob_vec.extend(parse_archive(
-                                    &archive,
-                                    archive_bytes
-                                ));
-                            } else {
-                                blob_vec.push(Blob::new(BinType::Error, BinSpecificProperties::Error("Archive refers to invalid position".to_string())));
-                            }
-                        },
-                        _ => blob_vec.push(Blob::new(BinType::Error, BinSpecificProperties::Error("fatarch enumeration failed".to_string())))
+                Archive(archive) => match fatarch {
+                    Ok(fatarch) => {
+                        if let Some(archive_bytes) = bytes.get(
+                            fatarch.offset as usize
+                                ..(fatarch.offset + fatarch.size) as usize,
+                        ) {
+                            blob_vec.extend(parse_archive(
+                                &archive,
+                                archive_bytes,
+                            ));
+                        } else {
+                            blob_vec.push(Blob::new(
+                                BinType::Error,
+                                BinSpecificProperties::Error(
+                                    "Archive refers to invalid position"
+                                        .to_string(),
+                                ),
+                            ));
+                        }
                     }
-                }
+                    _ => blob_vec.push(Blob::new(
+                        BinType::Error,
+                        BinSpecificProperties::Error(
+                            "fatarch enumeration failed".to_string(),
+                        ),
+                    )),
+                },
             }
         }
     }
@@ -174,7 +197,7 @@ fn parse_archive(
         .iter()
         .filter_map(|member_name| match archive.extract(member_name, bytes) {
             Ok(ext_bytes) => Some(get_blob_from_buf(ext_bytes)),
-            Err(_) => None
+            Err(_) => None,
         })
         .flatten()
         .collect()
@@ -183,6 +206,6 @@ fn parse_archive(
 fn get_file_type(buffer: &[u8]) -> &str {
     match infer::get(buffer) {
         Some(file_kind) => file_kind.extension(),
-        _ => "Unknown"
+        _ => "Unknown",
     }
 }

@@ -6,8 +6,8 @@ use either::Either;
 use goblin::elf::dynamic::{
     DF_1_NOW, DF_1_PIE, DF_BIND_NOW, DT_RPATH, DT_RUNPATH,
 };
-use goblin::elf::header::{ET_DYN, ET_REL, machine_to_str};
-use goblin::elf::program_header::{PT_GNU_RELRO, PT_GNU_STACK, PF_X};
+use goblin::elf::header::{machine_to_str, ET_DYN, ET_REL};
+use goblin::elf::program_header::{PF_X, PT_GNU_RELRO, PT_GNU_STACK};
 #[cfg(feature = "disassembly")]
 use goblin::elf::section_header::{SHF_ALLOC, SHF_EXECINSTR, SHT_PROGBITS};
 use goblin::elf::Elf;
@@ -24,9 +24,10 @@ use crate::colorize_bool;
 use crate::disassembly::{has_stack_clash_protection, Bitness};
 #[cfg(target_os = "linux")]
 use crate::ldso::{LdSoError, LdSoLookup};
-use crate::shared::{Rpath, VecRpath, Endianness};
+use crate::shared::{Endianness, Rpath, VecRpath};
 
-static STC_CANARY_KWDS: [&str; 3] = ["__stack_chk_fail", "__stack_chk_guard", "__intel_security_cookie"];
+static STC_CANARY_KWDS: [&str; 3] =
+    ["__stack_chk_fail", "__stack_chk_guard", "__intel_security_cookie"];
 
 /// Relocation Read-Only mode: `None`, `Partial`, or `Full`
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
@@ -96,7 +97,6 @@ impl fmt::Display for Nx {
         )
     }
 }
-
 
 /// Position Independent Executable mode: `None`, `DSO`, `REL` or `PIE`
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
@@ -242,7 +242,7 @@ impl CheckSecResults {
     pub fn parse(elf: &Elf, bytes: &[u8]) -> Self {
         let (fortified, fortifiable) = elf.has_fortified();
         let fortify = match (fortified, fortifiable) {
-            (0, 0) => Fortify::Undecidable, 
+            (0, 0) => Fortify::Undecidable,
             (f, v) if f == v => Fortify::Full,
             (0, _) => Fortify::None,
             (f, v) if f < v => Fortify::Partial,
@@ -251,9 +251,16 @@ impl CheckSecResults {
         Self {
             architecture: elf.get_architecture(),
             bitness: if elf.is_64 { 64 } else { 32 },
-            endianness: if elf.little_endian {Endianness::Little} else {Endianness::Big},
+            endianness: if elf.little_endian {
+                Endianness::Little
+            } else {
+                Endianness::Big
+            },
             dyn_linking: elf.dynamic.is_some(),
-            interpreter: match elf.interpreter{Some(path) => path.to_string(), None => "Unknown".into()},
+            interpreter: match elf.interpreter {
+                Some(path) => path.to_string(),
+                None => "Unknown".into(),
+            },
             canary: elf.has_canary(),
             clang_cfi: elf.has_clang_cfi(),
             clang_safestack: elf.has_clang_safestack(),
@@ -411,7 +418,7 @@ pub trait Properties {
     fn symbol_count(&self) -> usize;
     // return if the binary contains asan symbols (i.e., contains asan instrumentation)
     fn has_asan(&self) -> bool;
-    // Check if the program headers are combined with the text section, resulting in 
+    // Check if the program headers are combined with the text section, resulting in
     fn has_seperate_code_section(&self) -> bool;
 }
 
@@ -512,10 +519,10 @@ impl Properties for Elf<'_> {
     fn get_architecture(&self) -> String {
         machine_to_str(self.header.e_machine).to_string()
     }
-   fn has_canary(&self) -> bool {
+    fn has_canary(&self) -> bool {
         for sym in &self.dynsyms {
             if let Some(name) = self.dynstrtab.get_at(sym.st_name) {
-                if STC_CANARY_KWDS.iter().any(|kw| name.contains(kw)){
+                if STC_CANARY_KWDS.iter().any(|kw| name.contains(kw)) {
                     return true;
                 }
             }
@@ -611,10 +618,10 @@ impl Properties for Elf<'_> {
                 }
             }
         }
-        (fortified_count, fortifiable_count+fortified_count)
+        (fortified_count, fortifiable_count + fortified_count)
     }
     fn has_nx(&self) -> Nx {
-        if self.program_headers.is_empty(){
+        if self.program_headers.is_empty() {
             return Nx::Na;
         }
         for header in &self.program_headers {
@@ -646,7 +653,8 @@ impl Properties for Elf<'_> {
             if header.p_type == PT_GNU_RELRO {
                 if let Some(dynamic) = &self.dynamic {
                     if DF_BIND_NOW & dynamic.info.flags == DF_BIND_NOW
-                        || DF_1_NOW & dynamic.info.flags_1 == DF_1_NOW // binary not guaranteed to have both flags set. If either DF_BIND_NOW or DF_1_NOW are set, is is full Relro, as both flags disable lazy 
+                        || DF_1_NOW & dynamic.info.flags_1 == DF_1_NOW
+                    // binary not guaranteed to have both flags set. If either DF_BIND_NOW or DF_1_NOW are set, is is full Relro, as both flags disable lazy
                     {
                         return Relro::Full;
                     }
@@ -700,9 +708,11 @@ impl Properties for Elf<'_> {
     }
     fn has_asan(&self) -> bool {
         // __asan_init prologue added to functions :https://codebrowser.dev/llvm/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp.html#3012
-        self.dynsyms.iter().any(|dynsym| match self.dynstrtab.get_at(dynsym.st_name){
-            Some(sym_name) => {sym_name == "__asan_init"},
-            _ => false
+        self.dynsyms.iter().any(|dynsym| {
+            match self.dynstrtab.get_at(dynsym.st_name) {
+                Some(sym_name) => sym_name == "__asan_init",
+                _ => false,
+            }
         })
     }
     fn has_seperate_code_section(&self) -> bool {

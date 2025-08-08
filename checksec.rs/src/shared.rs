@@ -5,12 +5,11 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::Deref;
 
-
 /// Describe the endianness of the binary
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub enum Endianness {
     Big,
-    Little
+    Little,
 }
 
 impl fmt::Display for Endianness {
@@ -21,7 +20,6 @@ impl fmt::Display for Endianness {
         }
     }
 }
-
 
 /// Split contents of `DT_RPATH`/`DT_RUNPATH` or @rpath entries
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]

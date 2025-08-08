@@ -1,11 +1,11 @@
 //! Utilities for compression and encoding of checksec reports
-use serde::{Serialize, de::DeserializeOwned};
-use std::io::{Read, Cursor, Write};
-use flate2::{write::ZlibEncoder, read::ZlibDecoder, Compression};
-use sha2::{Sha256, Digest};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
-use bincode; 
+use bincode;
+use flate2::{read::ZlibDecoder, write::ZlibEncoder, Compression};
+use serde::{de::DeserializeOwned, Serialize};
+use sha2::{Digest, Sha256};
+use std::io::{Cursor, Read, Write};
 
 /// Compresses and base64-encodes a serializable data structure.
 ///
@@ -40,7 +40,7 @@ pub fn compress<T: Serialize>(results: &T) -> Result<String, String> {
     encoder
         .write_all(&serialized)
         .map_err(|_| "Compression failed".to_string())?;
-    
+
     let compressed = encoder
         .finish()
         .map_err(|_| "IO error occurred during flush".to_string())?;
@@ -69,23 +69,26 @@ pub fn compress<T: Serialize>(results: &T) -> Result<String, String> {
 /// # Errors
 ///
 /// Returns an error if decoding, decompression, or deserialization fails.
-pub fn decompress<T: DeserializeOwned>(encoded_bytes: &[u8]) -> Result<T, String> {
-
+pub fn decompress<T: DeserializeOwned>(
+    encoded_bytes: &[u8],
+) -> Result<T, String> {
     let encoded_compressed = std::str::from_utf8(encoded_bytes)
-    .map_err(|_| "Error converting bytes to utf".to_string())?.to_string();
+        .map_err(|_| "Error converting bytes to utf".to_string())?
+        .to_string();
 
-    let compressed = BASE64_STANDARD.decode(encoded_compressed)
-    .map_err(|_| "Decoding failed".to_string())?;
+    let compressed = BASE64_STANDARD
+        .decode(encoded_compressed)
+        .map_err(|_| "Decoding failed".to_string())?;
 
     let cursor = Cursor::new(compressed);
     let mut decoder = ZlibDecoder::new(cursor);
     let mut decompressed = Vec::new();
-    decoder.read_to_end(&mut decompressed)
-    .map_err(|_| "Error occurred during decompression".to_string())?;
-
+    decoder
+        .read_to_end(&mut decompressed)
+        .map_err(|_| "Error occurred during decompression".to_string())?;
 
     let deserialized = bincode::deserialize(&decompressed)
-    .map_err(|_| "Deserialization failed".to_string())?;
+        .map_err(|_| "Deserialization failed".to_string())?;
 
     Ok(deserialized) // input bytes -> B64 -> bytes -> decompress -> deserialize
 }

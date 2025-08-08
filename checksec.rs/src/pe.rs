@@ -1,18 +1,18 @@
 //! Implements checksec for PE32/32+ binaries
+use crate::shared::Endianness;
 #[cfg(feature = "color")]
 use colored::Colorize;
 use goblin::pe::utils::find_offset;
 use goblin::pe::PE;
 use goblin::pe::{
-    data_directories::DataDirectory, options::ParseOptions,
-    section_table::SectionTable, header
+    data_directories::DataDirectory, header, options::ParseOptions,
+    section_table::SectionTable,
 };
 use scroll::Pread;
 use scroll_derive::Pread;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::mem::size_of;
-use crate::shared::{Endianness};
 
 #[cfg(feature = "disassembly")]
 use crate::disassembly::{function_has_ge, Bitness};
@@ -236,18 +236,23 @@ fn get_load_config_val(
 }
 
 fn get_text_section<'a>(pe: &PE, bytes: &'a [u8]) -> Option<(&'a [u8], u32)> {
-    for section in &pe.sections{
-        let trimmed_bytes = &section.name.split(|&b| b == 0).next().unwrap_or(&[]);
-        let section_name = std::str::from_utf8(trimmed_bytes).unwrap_or_default();
-        if section_name != ".text"{
-            continue
+    for section in &pe.sections {
+        let trimmed_bytes =
+            &section.name.split(|&b| b == 0).next().unwrap_or(&[]);
+        let section_name =
+            std::str::from_utf8(trimmed_bytes).unwrap_or_default();
+        if section_name != ".text" {
+            continue;
         }
         if let Some(execbytes) = bytes.get(
-                usize::try_from(section.pointer_to_raw_data).unwrap()
-                    ..usize::try_from(section.pointer_to_raw_data + section.virtual_size).unwrap(),
-            ) {
-                return Some((execbytes, section.virtual_address));
-            }
+            usize::try_from(section.pointer_to_raw_data).unwrap()
+                ..usize::try_from(
+                    section.pointer_to_raw_data + section.virtual_size,
+                )
+                .unwrap(),
+        ) {
+            return Some((execbytes, section.virtual_address));
+        }
     }
     None
 }
@@ -378,7 +383,6 @@ impl CheckSecResults {
             cet: pe.is_cet_compat(),
             symbol_count: pe.symbol_count(),
             asan: pe.has_asan(),
-
         }
     }
 }
@@ -424,7 +428,7 @@ impl fmt::Display for CheckSecResults {
             self.endianness,
             "Dynamic Linking".bold(),
             self.dyn_linking,
-             "ASLR:".bold(),
+            "ASLR:".bold(),
             self.aslr,
             "Authenticode:".bold(),
             colorize_bool!(self.authenticode),
@@ -673,9 +677,15 @@ impl Properties for PE<'_> {
             if cookie_address == 0 {
                 return false;
             }
-            if let Some((text_bytes, ip)) = get_text_section(self, bytes){
-                let bitness = if self.is_64 { Bitness::B64 } else { Bitness::B32 };
-                return function_has_ge(text_bytes, bitness, u64::from(ip), cookie_address - self.image_base);
+            if let Some((text_bytes, ip)) = get_text_section(self, bytes) {
+                let bitness =
+                    if self.is_64 { Bitness::B64 } else { Bitness::B32 };
+                return function_has_ge(
+                    text_bytes,
+                    bitness,
+                    u64::from(ip),
+                    cookie_address - self.image_base,
+                );
             }
             false
         }
@@ -761,15 +771,15 @@ impl Properties for PE<'_> {
         }
     }
     fn is_cet_compat(&self) -> bool {
-         match &self.debug_data {
-            Some(debug_data) => {
-                match debug_data.ex_dll_characteristics_info {
-                    Some(dllcharacteristics) => {
-                    (dllcharacteristics.characteristics_ex & IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT) != 0
-                    }
-                    _ => false,
+        match &self.debug_data {
+            Some(debug_data) => match debug_data.ex_dll_characteristics_info {
+                Some(dllcharacteristics) => {
+                    (dllcharacteristics.characteristics_ex
+                        & IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT)
+                        != 0
                 }
-            }
+                _ => false,
+            },
             _ => false,
         }
     }
@@ -777,7 +787,7 @@ impl Properties for PE<'_> {
         self.exports.len()
     }
     fn has_asan(&self) -> bool {
-        self.exports.iter().any(|sym| match sym.name{
+        self.exports.iter().any(|sym| match sym.name {
             Some(name) => name == "__asan_init",
             _ => false,
         })
