@@ -57,4 +57,4 @@ jobs:
         with:
           toolchain: stable
       - name: cargo test
-        run: cargo test --all-features
+        run: cargo test --all-features -- --nocapture

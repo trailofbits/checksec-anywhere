@@ -532,18 +532,16 @@ fn parse_dependencies(
     while !to_scan.is_empty() {
         let mut results: Vec<Binary> = to_scan
             .par_iter()
-            .filter_map(|lib| {
-                match parse(lib, &mut cache.map(Arc::clone)) {
-                    Ok(bins) => Some(bins),
-                    Err(err) => {
-                        eprintln!(
-                            "Failed to parse {} for {}: {}",
-                            lib.display(),
-                            binary.file.display(),
-                            err
-                        );
-                        None
-                    }
+            .filter_map(|lib| match parse(lib, &mut cache.map(Arc::clone)) {
+                Ok(bins) => Some(bins),
+                Err(err) => {
+                    eprintln!(
+                        "Failed to parse {} for {}: {}",
+                        lib.display(),
+                        binary.file.display(),
+                        err
+                    );
+                    None
                 }
             })
             .flatten()
