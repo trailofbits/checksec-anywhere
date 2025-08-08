@@ -524,7 +524,7 @@ fn scan_dependencies(
 fn parse_dependencies(
     binary: &mut Binary,
     lookup: &Lookup,
-    cache: &Option<Cache>,
+    cache: Option<&Cache>,
 ) {
     let mut scanned = HashSet::new();
     let mut to_scan = scan_dependencies(binary, lookup, &scanned);
@@ -533,7 +533,7 @@ fn parse_dependencies(
         let mut results: Vec<Binary> = to_scan
             .par_iter()
             .filter_map(|lib| {
-                match parse(lib, &mut cache.as_ref().map(Arc::clone)) {
+                match parse(lib, &mut cache.map(Arc::clone)) {
                     Ok(bins) => Some(bins),
                     Err(err) => {
                         eprintln!(
@@ -576,7 +576,7 @@ fn parse_file_impl(
     let lookup = lookup.as_ref().unwrap();
 
     for result in &mut results {
-        parse_dependencies(result, lookup, cache);
+        parse_dependencies(result, lookup, cache.as_ref());
     }
 
     Ok(results)
