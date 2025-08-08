@@ -564,7 +564,7 @@ fn parse_dependencies(
 fn parse_file_impl(
     file: &Path,
     scan_dynlibs: bool,
-    lookup: &Option<Lookup>,
+    lookup: Option<&Lookup>,
     cache: &mut Option<Cache>,
 ) -> Result<Vec<Binary>, ParseError> {
     let mut results = parse(file, cache)?;
