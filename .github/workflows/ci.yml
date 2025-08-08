@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  fmt:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: checksec.rs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@b3b07ba8b418998c39fb20f53e8b695cdcc8de1b
+        with:
+          toolchain: stable
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: checksec.rs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@b3b07ba8b418998c39fb20f53e8b695cdcc8de1b
+        with:
+          toolchain: stable
+          components: clippy
+      - name: cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: checksec.rs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@b3b07ba8b418998c39fb20f53e8b695cdcc8de1b
+        with:
+          toolchain: stable
+      - name: cargo test
+        run: cargo test --all-features
