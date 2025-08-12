@@ -4,10 +4,15 @@ wasm:
 cli:
 	cargo build -p checksec --bin checksec --release
 
-local_instance:
+local_instance: wasm
 	cd frontend && python3 -m http.server
 
 test:
 	cargo test -p checksec
+
+clean:
+	cargo clean
+	rm -rf frontend/pkg
+	rm -rf checksec-wasm/pkg
 
 all: wasm cli
