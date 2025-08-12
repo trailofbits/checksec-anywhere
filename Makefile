@@ -1,13 +1,13 @@
-checksec_web:
-	cd checksec.rs && wasm-pack build --target web --out-dir ../frontend/pkg
+wasm:
+	wasm-pack build checksec-wasm --target web --out-dir ../frontend/pkg --out-name checksec
 
-checksec:
-	cd checksec.rs && cargo build --release
+cli:
+	cargo build -p checksec --bin checksec --release
 
 local_instance:
 	cd frontend && python3 -m http.server
 
 test:
-	cd checksec.rs && cargo test
+	cargo test -p checksec
 
-all: checksec_web checksec
+all: wasm cli

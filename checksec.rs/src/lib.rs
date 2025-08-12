@@ -21,10 +21,9 @@ pub mod shared;
 pub mod binary;
 pub mod compression;
 pub mod sarif;
-pub mod web_bindings;
 use binary::{BinSpecificProperties, BinType, Binary, Blob};
 
-const VERSION: &str = "0.1.0";
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Analyze a binary file buffer and extract security-related results.
 ///

@@ -1,0 +1,9 @@
+# Rust build artifacts
+/target/
+Cargo.lock
+
+# wasm-pack artifacts
+/pkg/
+*.wasm
+*.js
+*.d.ts

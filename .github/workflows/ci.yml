@@ -15,9 +15,6 @@ jobs:
   fmt:
     name: cargo fmt
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: checksec.rs
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,9 +27,6 @@ jobs:
   clippy:
     name: clippy
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: checksec.rs
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,13 +36,10 @@ jobs:
           toolchain: stable
           components: clippy
       - name: cargo clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
   test:
     name: test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: checksec.rs
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,4 +48,4 @@ jobs:
         with:
           toolchain: stable
       - name: cargo test
-        run: cargo test --all-features -- --nocapture
+        run: cargo test --workspace --all-features -- --nocapture

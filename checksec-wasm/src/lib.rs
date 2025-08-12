@@ -1,10 +1,6 @@
-//! Define web bindings so the `checksec` library can interact with JavaScript functionality.
-use crate::{
-    binary::Binary,
-    checksec,
-    compression::{compress, decompress},
-    sarif, VERSION,
-};
+//! WASM bindings for the checksec library
+
+use checksec::{binary::Binary, checksec, compression::{compress, decompress}, sarif, VERSION};
 use serde_derive::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 

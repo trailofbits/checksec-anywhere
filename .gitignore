@@ -1,2 +1,21 @@
-checksec.rs/target
+# Rust build artifacts
+/target/
+checksec.rs/target/
+checksec-wasm/target/
+Cargo.lock
+
+# macOS
 .DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log

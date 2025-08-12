@@ -1,6 +1,6 @@
 <input type="file" id="fileInput" />
 <script type="module">
-  import init, { checksec } from "./pkg/checksec.js";
+  import init, { checksec_web } from "./pkg/checksec.js";
 
   init().then(() => {
     document.getElementById("fileInput").addEventListener("change", async (event) => {
@@ -9,7 +9,7 @@
       const uint8Array = new Uint8Array(buffer);
 
       try {
-        const result = await checksec(uint8Array);
+        const result = await checksec_web(uint8Array, file.name);
         console.log("Checksec result:", result);
       } catch (err) {
         console.error("Checksec error:", err);
