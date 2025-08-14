@@ -1,5 +1,10 @@
 wasm:
-	wasm-pack build checksec-wasm --target web --out-dir ../frontend/pkg --out-name checksec
+	wasm-pack build checksec-wasm \
+		--target web \
+		--out-dir ../frontend/pkg \
+		--out-name checksec \
+		-- \
+		--profile release-wasm
 
 cli:
 	cargo build -p checksec --bin checksec --release

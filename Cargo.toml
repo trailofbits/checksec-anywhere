@@ -1,9 +1,6 @@
 [workspace]
-members = [
-    "checksec.rs",
-    "checksec-wasm"
-]
-resolver = "2"
+members = ["checksec.rs", "checksec-wasm"]
+resolver = "3"
 
 [workspace.package]
 version = "0.1.0"
@@ -13,8 +10,9 @@ repository = "https://github.com/trailofbits/checksec-anywhere"
 homepage = "https://trailofbits.github.io/checksec-anywhere"
 edition = "2021"
 
-[profile.release]
-codegen-units = 1 # Reduce number of codegen units to increase optimizations
-lto = true        # Enable Link Time Optimization
-opt-level = 'z'   # Optimize for size
-panic = 'abort'   # Abort on panic
+[profile.release-wasm]
+inherits = "release"
+codegen-units = 1    # Reduce number of codegen units to increase optimizations
+lto = true           # Enable Link Time Optimization
+opt-level = 'z'      # Optimize for size
+panic = 'abort'      # Abort on panic
