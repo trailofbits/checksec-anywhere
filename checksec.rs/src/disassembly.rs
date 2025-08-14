@@ -110,7 +110,7 @@ pub fn function_has_ge(
             return false;
         }
         decoder.decode_out(&mut instr);
-        instruction_window.push(instr);
+        instruction_window.enqueue(instr);
         true
     });
 
@@ -120,7 +120,7 @@ pub fn function_has_ge(
 
     while decoder.can_decode() {
         decoder.decode_out(&mut instr);
-        instruction_window.push(instr);
+        instruction_window.enqueue(instr);
         if xored_canary_addr == 0 {
             xored_canary_addr = check_is_canary_prologue(
                 &instruction_window,
