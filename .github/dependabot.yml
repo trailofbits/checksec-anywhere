@@ -1,9 +1,11 @@
 version: 2
 updates:
+  # Cargo workspace (manages all crates)
   - package-ecosystem: "cargo"
-    directory: "/checksec.rs"
+    directory: "/"
     schedule:
       interval: "weekly"
+  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

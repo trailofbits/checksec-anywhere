@@ -1,0 +1,29 @@
+[workspace]
+members = ["checksec.rs", "checksec-wasm"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+license = "Apache-2.0"
+repository = "https://github.com/trailofbits/checksec-anywhere"
+homepage = "https://trailofbits.github.io/checksec-anywhere"
+edition = "2021"
+
+[profile.release]
+# Tailored for CLI builds
+codegen-units = 1 # Reduce number of codegen units to increase optimizations  
+lto = true        # Enable Link Time Optimization
+opt-level = 3     # Optimize for speed (CLI performance)
+panic = 'unwind'  # Allow unwinding for better error handling in CLI
+
+[profile.release-wasm]
+# Tailored for WASM build, but wasm-pack doesn't support passing --profile yet.
+# It should be available in the next wasm-pack release (v0.13.2).
+# see: https://github.com/drager/wasm-pack/commit/513feba51b93b2346cc2f88cb20ebf3b12bd0ab7
+#
+# The size difference between this and the release profile above is ~300K
+inherits = "release"
+codegen-units = 1    # Reduce number of codegen units to increase optimizations
+lto = true           # Enable Link Time Optimization
+opt-level = 'z'      # Optimize for size
+panic = 'abort'      # Abort on panic

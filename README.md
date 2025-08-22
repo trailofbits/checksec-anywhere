@@ -33,16 +33,75 @@ Analysis performance for 699 files in `/usr/bin`:
 | checksec (go) | 0.804s |
 | Checksec Anywhere (browser) | 2.777s |
 
-## Technical Details
-The core of Checksec Anywhere is built on [checksec.rs](https://crates.io/crates/checksec). 
+## Architecture
 
-Key additions include:
-- A unified library interface for checksec functionality
-- WebAssembly bindings to expose checksec functionality to the browser
-- SARIF output
-- Compress and encode reports into static shareable URLs
-- Additional functionality and checks
-  - Fine-grained disassembly for GS detection in PE binaries.
-  - Checks for mixing of data and code in ELF program headers.
+### Project Structure
+```
+checksec-anywhere/
+├── checksec.rs/              # Core library + CLI tool (fork of checksec.rs)
+├── checksec-wasm/            # WebAssembly bindings for browser
+├── frontend/                 # Web application
+```
+
+### Core Library (`checksec.rs/`)
+The core of Checksec Anywhere is built on [checksec.rs](https://crates.io/crates/checksec), enhanced with:
+
+- **Unified API**: Library and CLI tool in one crate
+- **Enhanced Checks**: Additional security analysis features:
+  - Fine-grained disassembly for GS detection in PE binaries
+  - Checks for mixing of data and code in ELF program headers
   - Address Sanitizer detection
-  - and more!
+  - And more!
+- **SARIF Export**: Industry-standard security report format
+- **Compression**: Utilities for shareable result URLs
+
+### WebAssembly Bindings (`checksec-wasm/`)
+Exposes core functionality to JavaScript with:
+
+- **`checksec_web(buffer, filename)`** - Main binary analysis function
+- **`checksec_compress(results)`** - Compress results for URL sharing  
+- **`checksec_decompress(data)`** - Decompress shared results
+- **`generate_sarif_report(results)`** - Generate SARIF format reports
+
+### Frontend (`frontend/`)
+Modern web application providing:
+
+- **Privacy-first**: All processing happens client-side in WebAssembly
+- **Drag & Drop**: Intuitive file upload with directory support
+- **Real-time Analysis**: Instant feedback as files are processed
+- **Shareable URLs**: Compressed results encoded in static URLs
+- **Responsive Design**: Works on desktop and mobile browsers
+
+## Development
+
+### Prerequisites
+- Rust toolchain with `wasm32-unknown-unknown` target
+- `wasm-pack` for WebAssembly compilation
+
+### Build Commands
+```bash
+# Build CLI tool
+make cli
+
+# Build WebAssembly bindings  
+make wasm
+
+# Build both CLI and WASM
+make all
+
+# Start local development server (builds WASM first)
+make local_instance
+
+# Run tests
+make test
+
+# Clean all build artifacts
+make clean
+```
+
+### Local Development
+```bash
+# Start development server at http://localhost:8000
+make local_instance
+```
+
