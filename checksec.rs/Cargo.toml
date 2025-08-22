@@ -12,7 +12,6 @@ documentation = "https://docs.rs/checksec"
 include = ["src/*.rs", "Cargo.toml", "README.md", "LICENSE"]
 keywords = ["checksec", "binary", "security", "sarif"]
 readme = "README.md"
-exclude = ["examples/", "tests/"]
 
 
 [dependencies]
