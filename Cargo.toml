@@ -4,7 +4,6 @@ resolver = "3"
 
 [workspace.package]
 version = "0.1.0"
-authors = ["etke", "Trail of Bits"]
 license = "Apache-2.0"
 repository = "https://github.com/trailofbits/checksec-anywhere"
 homepage = "https://trailofbits.github.io/checksec-anywhere"
