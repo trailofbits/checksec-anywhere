@@ -1,4 +1,5 @@
 wasm:
+	cargo install wasm-pack
 	wasm-pack build checksec-wasm \
 		--target web \
 		--out-dir ../frontend/pkg \
