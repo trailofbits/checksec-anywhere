@@ -382,8 +382,6 @@ function closeTab(tabButton, tabContent) {
             scrollToActiveTab();
         }
     }
-    updateCombinedSarifButton();
-    updateCombinedSarifButton();
 }
 
 function updateTabIndices() {

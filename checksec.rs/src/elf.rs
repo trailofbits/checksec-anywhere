@@ -718,7 +718,7 @@ impl Properties for Elf<'_> {
     fn has_seperate_code_section(&self) -> bool {
         // RX permissions at offset 0 indicates combined segments, since offset 0 contains ELF header info, not .text code
         !self.program_headers.iter().any(|header| {
-            header.p_offset == 0 && header.is_executable() && header.is_read()
+            header.p_offset == 0 && header.is_executable()
         })
     }
 }
