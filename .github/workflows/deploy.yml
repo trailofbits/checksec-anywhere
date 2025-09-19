@@ -5,6 +5,10 @@ on:
     branches:
       - main  # Trigger on pushes to main
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   build:
     environment:
