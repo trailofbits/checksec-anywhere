@@ -1,7 +1,10 @@
 //! Utilities for compression and encoding of checksec reports
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
-use bincode;
+use bincode::{
+    config,
+    serde::{decode_from_slice, encode_to_vec},
+};
 use flate2::{read::ZlibDecoder, write::ZlibEncoder, Compression};
 use serde::{de::DeserializeOwned, Serialize};
 use sha2::{Digest, Sha256};
@@ -45,7 +48,7 @@ use std::io::{Cursor, Read, Write};
 ///
 /// See: <https://docs.rs/bincode/latest/bincode/serde/index.html#known-issues>
 pub fn compress<T: Serialize>(results: &T) -> Result<String, String> {
-    let serialized = bincode::serde::encode_to_vec(results, bincode::config::standard())
+    let serialized = encode_to_vec(results, config::standard())
         .map_err(|_| "Result serialization to binary failed".to_string())?;
 
     let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
@@ -111,8 +114,9 @@ pub fn decompress<T: DeserializeOwned>(
         .read_to_end(&mut decompressed)
         .map_err(|_| "Error occurred during decompression".to_string())?;
 
-    let (deserialized, _): (T, usize) = bincode::serde::decode_from_slice(&decompressed, bincode::config::standard())
-        .map_err(|_| "Deserialization failed".to_string())?;
+    let (deserialized, _) =
+        decode_from_slice(&decompressed, config::standard())
+            .map_err(|_| "Deserialization failed".to_string())?;
 
     Ok(deserialized) // input bytes -> B64 -> bytes -> decompress -> deserialize
 }
