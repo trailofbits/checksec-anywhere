@@ -32,8 +32,20 @@ use std::io::{Cursor, Read, Write};
 /// - Serialization to binary using `bincode` fails.
 /// - Compression using zlib fails during writing.
 /// - Finishing the compression (flushing) encounters an IO error.
+///
+/// # Bincode Limitations
+///
+/// Due to bincode's format limitations, the following serde attributes are not supported
+/// and will cause data loss or corruption:
+/// - `#[serde(flatten)]`
+/// - `#[serde(skip)]`, `#[serde(skip_deserializing)]`, `#[serde(skip_serializing)]`
+/// - `#[serde(skip_serializing_if = "path")]`
+/// - `#[serde(tag = "...")]`
+/// - `#[serde(untagged)]`
+///
+/// See: <https://docs.rs/bincode/latest/bincode/serde/index.html#known-issues>
 pub fn compress<T: Serialize>(results: &T) -> Result<String, String> {
-    let serialized = bincode::serialize(&results)
+    let serialized = bincode::serde::encode_to_vec(results, bincode::config::standard())
         .map_err(|_| "Result serialization to binary failed".to_string())?;
 
     let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
@@ -69,6 +81,18 @@ pub fn compress<T: Serialize>(results: &T) -> Result<String, String> {
 /// # Errors
 ///
 /// Returns an error if decoding, decompression, or deserialization fails.
+///
+/// # Bincode Limitations
+///
+/// Due to bincode's format limitations, data serialized with the following serde attributes
+/// cannot be properly deserialized and will cause data loss or corruption:
+/// - `#[serde(flatten)]`
+/// - `#[serde(skip)]`, `#[serde(skip_deserializing)]`, `#[serde(skip_serializing)]`
+/// - `#[serde(skip_serializing_if = "path")]`
+/// - `#[serde(tag = "...")]`
+/// - `#[serde(untagged)]`
+///
+/// See: <https://docs.rs/bincode/latest/bincode/serde/index.html#known-issues>
 pub fn decompress<T: DeserializeOwned>(
     encoded_bytes: &[u8],
 ) -> Result<T, String> {
@@ -87,7 +111,7 @@ pub fn decompress<T: DeserializeOwned>(
         .read_to_end(&mut decompressed)
         .map_err(|_| "Error occurred during decompression".to_string())?;
 
-    let deserialized = bincode::deserialize(&decompressed)
+    let (deserialized, _): (T, usize) = bincode::serde::decode_from_slice(&decompressed, bincode::config::standard())
         .map_err(|_| "Deserialization failed".to_string())?;
 
     Ok(deserialized) // input bytes -> B64 -> bytes -> decompress -> deserialize
