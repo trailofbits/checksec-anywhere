@@ -35,7 +35,7 @@ scroll = "0.13.0"
 serde = { version = "1.0.145", features = ["derive"] }
 serde_derive = "1.0.145"
 serde_json = "1.0.86"
-sysinfo = "0.28.2"
+sysinfo = "0.37.2"
 flate2 = "1.1.2"
 base64 = "0.22.1"
 bincode = { version = "2.0.1", features = ["serde"] }
