@@ -2,13 +2,13 @@
 
 Analyze binary security features instantly in your browser. No downloads, no uploads, no accounts.
 
-**[Try it now](https://trailofbits.github.io/checksec-anywhere)**
+**[Try it now](https://checksec-anywhere.com/)**
 
 > **Your files never leave your browser** - Critical for proprietary software, security-sensitive applications, and compliance-restricted code
 
 ## Get Started in 30 seconds
 
-1. Open [https://trailofbits.github.io/checksec-anywhere](https://trailofbits.github.io/checksec-anywhere) in your browser
+1. Open [https://checksec-anywhere.com/](https://checksec-anywhere.com/) in your browser
 2. Drag and drop your binary file
 3. Get comprehensive security analysis instantly
 
