@@ -35,7 +35,11 @@ body {
 
 .header-logo-corner .tob-logo {
     height: 65px;
+    max-height: 65px;
     width: auto;
+    max-width: 200px;
+    display: block;
+    object-fit: contain;
     opacity: 0.7;
     transition: opacity 0.3s ease, transform 0.2s ease;
 }
@@ -119,7 +123,7 @@ body {
     background: #161b22;
     border-radius: 8px;
     padding: 30px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     border: 1px solid #30363d;
 }
 
@@ -213,7 +217,9 @@ body {
     border: 1px solid #444c56;
 }
 
-.share-btn, .copy-btn, .sarif-btn {
+.share-btn,
+.copy-btn,
+.sarif-btn {
     background: #161b22;
     color: #e6edf3;
     border: 1px solid #30363d;
@@ -226,12 +232,15 @@ body {
     min-width: 100px;
 }
 
-.share-btn:hover, .copy-btn:hover, .sarif-btn:hover {
+.share-btn:hover,
+.copy-btn:hover,
+.sarif-btn:hover {
     background: #21262d;
     border-color: #444c56;
 }
 
-.copy-btn.copied, .sarif-btn.downloaded {
+.copy-btn.copied,
+.sarif-btn.downloaded {
     background: #1a472a;
     border-color: #2d5016;
     color: #56d364;
@@ -346,11 +355,11 @@ body {
         min-width: 100%;
         padding: 1rem;
     }
-    
+
     .info-title {
         font-size: 0.9rem;
     }
-    
+
     .info-section p {
         font-size: 0.8rem;
     }
@@ -725,7 +734,8 @@ body {
     font-size: 1rem;
 }
 
-#currentFile, #totalFiles {
+#currentFile,
+#totalFiles {
     font-weight: 600;
     color: #f0f6fc;
 }
@@ -736,7 +746,7 @@ body {
         padding: 10px;
         margin-top: 15px;
     }
-    
+
     .file-result-section h3 {
         font-size: 1rem;
     }
@@ -746,7 +756,7 @@ body {
 .tabs-container {
     background: #161b22;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     margin-top: 20px;
 }
 
@@ -868,17 +878,17 @@ body {
     .tabs-header {
         flex-wrap: wrap;
     }
-    
+
     .tab-button {
         min-width: 100px;
         padding: 10px 15px;
         font-size: 0.8rem;
     }
-    
+
     .tab-content {
         padding: 20px;
     }
-    
+
     .tab-content h2 {
         font-size: 1.3rem;
     }
@@ -1136,12 +1146,12 @@ body {
         flex-direction: column;
         gap: 6px;
     }
-    
+
     .upload-type-btn {
         justify-content: center;
         padding: 10px 16px;
     }
-} 
+}
 
 /* Responsive design for button container */
 @media (max-width: 600px) {
@@ -1149,9 +1159,9 @@ body {
         flex-direction: column;
         gap: 8px;
     }
-    
+
     .tabs-button-container .combined-sarif-btn,
     .tabs-button-container .close-all-reports-btn {
         margin-bottom: 0;
     }
-} 
+}
