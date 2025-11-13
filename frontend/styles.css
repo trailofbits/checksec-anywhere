@@ -23,26 +23,6 @@ body {
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
-    position: relative;
-}
-
-.header-logo-corner {
-    position: fixed;
-    top: 0.5rem;
-    right: 0.5rem;
-    z-index: 10;
-}
-
-.header-logo-corner .tob-logo {
-    height: 65px;
-    width: auto;
-    opacity: 0.7;
-    transition: opacity 0.3s ease, transform 0.2s ease;
-}
-
-.header-logo-corner .tob-logo:hover {
-    opacity: 1;
-    transform: scale(1.05);
 }
 
 .title-section {
@@ -322,18 +302,6 @@ body {
 @media (max-width: 600px) {
     .container {
         padding: 20px 15px;
-    }
-
-    .header-logo-corner {
-        position: relative;
-        top: 0;
-        right: 0;
-        text-align: center;
-        margin-bottom: 1.5rem;
-    }
-
-    .header-logo-corner .tob-logo {
-        height: 55px;
     }
 
     .footer-info {
@@ -636,13 +604,6 @@ body {
     color: #8b949e;
     font-size: 0.85rem;
     margin: 0;
-}
-
-.developed-by {
-    text-align: center;
-    color: #ad2b53;
-    font-size: 0.85rem;
-    margin: 0.5rem 0 0 0;
 }
 
 .footer p {
