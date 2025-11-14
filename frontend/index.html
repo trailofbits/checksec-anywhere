@@ -9,15 +9,28 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header-logo-corner">
-            <a href="https://www.trailofbits.com/" target="_blank" rel="noopener noreferrer">
-                <img src="Trail-of-Bits-alt-dark-background.png" alt="Trail of Bits" class="tob-logo">
-            </a>
+    <header class="top-header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="https://www.trailofbits.com/" target="_blank" rel="noopener noreferrer" class="header-logo-link">
+                    <img src="Trail-of-Bits-alt-dark-background.png" alt="Trail of Bits" class="header-logo">
+                </a>
+                <span class="header-divider">/</span>
+                <span class="header-title">checksec-anywhere</span>
+            </div>
+            <div class="header-right">
+                <a href="https://github.com/trailofbits/checksec-anywhere" target="_blank" rel="noopener noreferrer" class="github-link" title="View on GitHub">
+                    <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                    </svg>
+                </a>
+            </div>
         </div>
+    </header>
+    <div class="container">
         <div class="title-section">
-            <h1>Checksec Anywhere</h1>
-            <p class="subtitle">Analyze binary security features in your browser</p>
+            <h1>Analyze binary security features in your browser</h1>
+            <p class="subtitle">Check security protections in ELF, PE, and Mach-O binaries — all processing happens locally</p>
         </div>
         
         <div class="input-section">
@@ -82,7 +95,6 @@
                 </div>
             </div>
             <p class="source-link">Check out the <a href="https://github.com/trailofbits/checksec-anywhere" target="_blank" rel="noopener noreferrer">source code</a>!</p>
-            <p class="developed-by">Developed by Trail of Bits</p>
         </div>
     </footer>
     <script type="module" src="app.js"></script>
