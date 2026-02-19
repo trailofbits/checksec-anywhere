@@ -877,14 +877,14 @@ fn main() {
         libraries,
     );
 
+    let refresh_kind = RefreshKind::nothing().with_processes(
+        ProcessRefreshKind::nothing()
+            .with_cpu()
+            .with_exe(UpdateKind::OnlyIfNotSet),
+    );
+
     if procall {
-        let system = System::new_with_specifics(
-            RefreshKind::nothing().with_processes(
-                ProcessRefreshKind::nothing()
-                    .with_cpu()
-                    .with_exe(UpdateKind::OnlyIfNotSet),
-            ),
-        );
+        let system = System::new_with_specifics(refresh_kind);
 
         let procs = parse_processes(system.processes().values(), libraries);
 
@@ -900,13 +900,7 @@ fn main() {
                 }
             })
             .collect();
-        let system = System::new_with_specifics(
-            RefreshKind::nothing().with_processes(
-                ProcessRefreshKind::nothing()
-                    .with_cpu()
-                    .with_exe(UpdateKind::OnlyIfNotSet),
-            ),
-        );
+        let system = System::new_with_specifics(refresh_kind);
 
         let procs = parse_processes(
             procids
@@ -925,10 +919,10 @@ fn main() {
                 "No valid executable found for process {} with ID {}: {}",
                 process.name().to_string_lossy(),
                 process.pid(),
-                process
-                    .exe()
-                    .unwrap_or(Path::new("<unknown>"))
-                    .display()
+                match process.exe() {
+                    Some(exe) => exe.display().to_string(),
+                    None => "<unknown>".to_string(),
+                }
             );
                         false
                     }
@@ -938,13 +932,7 @@ fn main() {
 
         print_process_results(&Processes::new(procs), &settings);
     } else if let Some(procname) = procname {
-        let system = System::new_with_specifics(
-            RefreshKind::nothing().with_processes(
-                ProcessRefreshKind::nothing()
-                    .with_cpu()
-                    .with_exe(UpdateKind::OnlyIfNotSet),
-            ),
-        );
+        let system = System::new_with_specifics(refresh_kind);
 
         let procs = parse_processes(
             system
