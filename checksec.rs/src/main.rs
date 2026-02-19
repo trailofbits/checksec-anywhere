@@ -707,9 +707,13 @@ where
     processes
         .par_bridge()
         .filter_map(|process| {
-            let exe = match process.exe() {
-                Some(exe) => exe,
-                None => return None,
+            let Some(exe) = process.exe() else {
+                eprintln!(
+                    "No executable path for process {} with ID {}",
+                    process.name().to_string_lossy(),
+                    process.pid()
+                );
+                return None;
             };
             match parse(exe, &mut Some(Arc::clone(&cache))) {
                 Err(err) => {
@@ -878,9 +882,7 @@ fn main() {
     );
 
     let refresh_kind = RefreshKind::nothing().with_processes(
-        ProcessRefreshKind::nothing()
-            .with_cpu()
-            .with_exe(UpdateKind::OnlyIfNotSet),
+        ProcessRefreshKind::nothing().with_cpu().with_exe(UpdateKind::Always),
     );
 
     if procall {
