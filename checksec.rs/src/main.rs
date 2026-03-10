@@ -921,10 +921,7 @@ fn main() {
                 "No valid executable found for process {} with ID {}: {}",
                 process.name().to_string_lossy(),
                 process.pid(),
-                match process.exe() {
-                    Some(exe) => exe.display().to_string(),
-                    None => "<unknown>".to_string(),
-                }
+                process.exe().map_or("<unknown>".to_string(), |exe| exe.display().to_string())
             );
                         false
                     }
