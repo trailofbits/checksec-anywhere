@@ -6,7 +6,6 @@ extern crate core;
 extern crate goblin;
 extern crate ignore;
 extern crate serde_json;
-extern crate sysinfo;
 
 use clap::{
     crate_authors, crate_description, crate_version, Arg, ArgAction, ArgGroup,
@@ -25,9 +24,7 @@ use memmap2::Mmap;
 use rayon::iter::ParallelBridge;
 use rayon::prelude::*;
 use serde_json::{json, to_string_pretty};
-use sysinfo::{
-    PidExt, ProcessExt, ProcessRefreshKind, RefreshKind, System, SystemExt,
-};
+use sysinfo::{ProcessRefreshKind, RefreshKind, System, UpdateKind};
 
 use std::collections::HashMap;
 #[cfg(all(target_os = "linux", feature = "elf"))]
@@ -643,7 +640,9 @@ fn parse_process_libraries(
         .into_iter()
         .filter(|m| m.flags.x)
         .filter_map(|m| m.pathname)
-        .filter(|p| p.is_absolute() && p != process.exe())
+        .filter(|p| {
+            p.is_absolute() && process.exe().is_none_or(|exe| p != exe)
+        })
         .map(|p| match p.file_name() {
             Some(file_name) => match file_name.to_str() {
                 Some(file_name) => {
@@ -708,7 +707,15 @@ where
     processes
         .par_bridge()
         .filter_map(|process| {
-            match parse(process.exe(), &mut Some(Arc::clone(&cache))) {
+            let Some(exe) = process.exe() else {
+                eprintln!(
+                    "No executable path for process {} with ID {}",
+                    process.name().to_string_lossy(),
+                    process.pid()
+                );
+                return None;
+            };
+            match parse(exe, &mut Some(Arc::clone(&cache))) {
                 Err(err) => {
                     if let ParseError::IO(ref e) = err {
                         if e.kind() == ErrorKind::NotFound
@@ -720,7 +727,7 @@ where
 
                     eprintln!(
                         "Can not parse process {} with ID {}: {}",
-                        process.name(),
+                        process.name().to_string_lossy(),
                         process.pid(),
                         err
                     );
@@ -874,11 +881,12 @@ fn main() {
         libraries,
     );
 
+    let refresh_kind = RefreshKind::nothing().with_processes(
+        ProcessRefreshKind::nothing().with_cpu().with_exe(UpdateKind::Always),
+    );
+
     if procall {
-        let system = System::new_with_specifics(
-            RefreshKind::new()
-                .with_processes(ProcessRefreshKind::new().with_cpu()),
-        );
+        let system = System::new_with_specifics(refresh_kind);
 
         let procs = parse_processes(system.processes().values(), libraries);
 
@@ -894,10 +902,7 @@ fn main() {
                 }
             })
             .collect();
-        let system = System::new_with_specifics(
-            RefreshKind::new()
-                .with_processes(ProcessRefreshKind::new().with_cpu()),
-        );
+        let system = System::new_with_specifics(refresh_kind);
 
         let procs = parse_processes(
             procids
@@ -909,14 +914,14 @@ fn main() {
                     })
                 })
                 .filter(|process| {
-                    if process.exe().is_file() {
+                    if process.exe().is_some_and(Path::is_file) {
                         true
                     } else {
                         eprintln!(
                 "No valid executable found for process {} with ID {}: {}",
-                process.name(),
+                process.name().to_string_lossy(),
                 process.pid(),
-                process.exe().display()
+                process.exe().map_or("<unknown>".to_string(), |exe| exe.display().to_string())
             );
                         false
                     }
@@ -926,14 +931,11 @@ fn main() {
 
         print_process_results(&Processes::new(procs), &settings);
     } else if let Some(procname) = procname {
-        let system = System::new_with_specifics(
-            RefreshKind::new()
-                .with_processes(ProcessRefreshKind::new().with_cpu()),
-        );
+        let system = System::new_with_specifics(refresh_kind);
 
         let procs = parse_processes(
             system
-                .processes_by_name(procname)
+                .processes_by_name(OsStr::new(procname))
                 // TODO: processes_by_name() should return a Iterator implementing the trait Send
                 .collect::<Vec<&sysinfo::Process>>()
                 .into_iter(),
