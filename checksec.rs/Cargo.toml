@@ -16,7 +16,7 @@ readme = "README.md"
 [dependencies]
 ringbuffer = "0.16.0"
 url = "2.5.4"
-sha2 = "0.10.9"
+sha2 = "0.11.0"
 hex = "0.4.3"
 infer = "0.19.0"
 serde-sarif = "0.8.0"
