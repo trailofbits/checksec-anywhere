@@ -693,7 +693,7 @@ body {
 }
 
 .info-section strong {
-    color: #58a6ff;
+    color: inherit;
     font-weight: 600;
 }
 
