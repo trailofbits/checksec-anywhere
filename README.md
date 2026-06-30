@@ -6,6 +6,8 @@ Analyze binary security features instantly in your browser. No downloads, no upl
 
 > **Your files never leave your browser** - Critical for proprietary software, security-sensitive applications, and compliance-restricted code
 
+📖 Read the introductory blog post: [Building Checksec Without Boundaries with Checksec Anywhere](https://blog.trailofbits.com/2025/11/13/building-checksec-without-boundaries-with-checksec-anywhere/)
+
 ## Get Started in 30 seconds
 
 1. Open [https://checksec-anywhere.com/](https://checksec-anywhere.com/) in your browser

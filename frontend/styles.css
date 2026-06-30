@@ -693,7 +693,7 @@ body {
 }
 
 .info-section strong {
-    color: #58a6ff;
+    color: inherit;
     font-weight: 600;
 }
 
@@ -702,6 +702,13 @@ body {
     color: #8b949e;
     font-size: 0.85rem;
     margin: 0;
+}
+
+.license-link {
+    text-align: center;
+    color: #8b949e;
+    font-size: 0.8rem;
+    margin: 0.5rem 0 0;
 }
 
 .footer p {
