@@ -257,14 +257,10 @@ impl Properties for MachO<'_> {
     fn has_encrypted(&self) -> bool {
         for loadcmd in &self.load_commands {
             match loadcmd.command {
-                CommandVariant::EncryptionInfo32(cmd)
-                    if cmd.cryptid != 0 =>
-                {
+                CommandVariant::EncryptionInfo32(cmd) if cmd.cryptid != 0 => {
                     return true;
                 }
-                CommandVariant::EncryptionInfo64(cmd)
-                    if cmd.cryptid != 0 =>
-                {
+                CommandVariant::EncryptionInfo64(cmd) if cmd.cryptid != 0 => {
                     return true;
                 }
                 _ => (),
