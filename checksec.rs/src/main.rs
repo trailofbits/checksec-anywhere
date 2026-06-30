@@ -613,7 +613,7 @@ fn walk(
     let bins: Vec<Binary> = Walk::new(basepath)
         .flatten()
         .filter(|entry| {
-            entry.file_type().filter(std::fs::FileType::is_file).is_some()
+            entry.file_type().as_ref().is_some_and(std::fs::FileType::is_file)
         })
         .par_bridge()
         .filter_map(|entry| {
