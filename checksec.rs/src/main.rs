@@ -108,7 +108,7 @@ fn print_filename(file: &Path) -> impl std::fmt::Display + '_ {
 fn print_binary_results(binaries: &[Binary], settings: &output::Settings) {
     match settings.format {
         output::Format::Json => {
-            println!("{}", &json!(binaries));
+            println!("{}", json!(binaries));
         }
         output::Format::JsonPretty => {
             #[cfg(feature = "color")]
@@ -165,7 +165,7 @@ fn print_binary_results(binaries: &[Binary], settings: &output::Settings) {
 fn print_process_results(processes: &Processes, settings: &output::Settings) {
     match settings.format {
         output::Format::Json => {
-            println!("{}", &json!(processes));
+            println!("{}", json!(processes));
         }
         output::Format::JsonPretty => {
             #[cfg(feature = "color")]
